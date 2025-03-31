@@ -1,6 +1,7 @@
 README.md
 pyproject.toml
 imagewand/__init__.py
+imagewand/cli.py
 imagewand/pdf2img.py
 imagewand/resize.py
 imagewand.egg-info/PKG-INFO

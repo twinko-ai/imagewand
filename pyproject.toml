@@ -10,6 +10,8 @@ dependencies = [
     "Pillow",
     "pdf2image",
     "requests>=2.31.0",
+    "tqdm",
+    "PyMuPDF",
 ]
 
 [build-system]
@@ -17,6 +19,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
+imagewand = "imagewand.cli:main"
 resize-images = "imagewand.resize:resize_image"
 pdf-to-images = "imagewand.pdf2img:pdf_to_images"
 

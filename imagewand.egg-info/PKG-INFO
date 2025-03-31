@@ -9,5 +9,7 @@ Description-Content-Type: text/markdown
 Requires-Dist: Pillow
 Requires-Dist: pdf2image
 Requires-Dist: requests>=2.31.0
+Requires-Dist: tqdm
+Requires-Dist: PyMuPDF
 
 # imagewand
