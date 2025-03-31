@@ -1,0 +1,3 @@
+[console_scripts]
+pdf-to-images = imagewand.pdf2img:pdf_to_images
+resize-images = imagewand.resize:resize_image

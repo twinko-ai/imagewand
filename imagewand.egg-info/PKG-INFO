@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: imagewand
+Version: 0.1.0
+Summary: A Python package for image resizing and PDF to image conversion
+Author-email: Your Name <your.email@example.com>
+License-Expression: MIT
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+Requires-Dist: Pillow
+Requires-Dist: pdf2image
+Requires-Dist: requests>=2.31.0
+
+# imagewand
