@@ -1,4 +1,5 @@
 [console_scripts]
 imagewand = imagewand.cli:main
+imagewand-merge = imagewand.scripts.merge_command:merge
 pdf-to-images = imagewand.pdf2img:pdf_to_images
 resize-images = imagewand.resize:resize_image

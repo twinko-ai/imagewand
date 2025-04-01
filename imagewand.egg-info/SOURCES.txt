@@ -1,7 +1,11 @@
 README.md
 pyproject.toml
+setup.py
 imagewand/__init__.py
+imagewand/autofix.py
+imagewand/automerge.py
 imagewand/cli.py
+imagewand/filters.py
 imagewand/pdf2img.py
 imagewand/resize.py
 imagewand.egg-info/PKG-INFO
@@ -10,3 +14,6 @@ imagewand.egg-info/dependency_links.txt
 imagewand.egg-info/entry_points.txt
 imagewand.egg-info/requires.txt
 imagewand.egg-info/top_level.txt
+imagewand/plugins/__init__.py
+imagewand/plugins/custom_filters.py
+imagewand/scripts/merge_command.py

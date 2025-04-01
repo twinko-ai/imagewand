@@ -11,5 +11,7 @@ Requires-Dist: pdf2image
 Requires-Dist: requests>=2.31.0
 Requires-Dist: tqdm
 Requires-Dist: PyMuPDF
+Requires-Dist: opencv-python
+Requires-Dist: numpy
 
 # imagewand

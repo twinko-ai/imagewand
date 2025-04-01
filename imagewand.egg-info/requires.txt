@@ -3,3 +3,5 @@ pdf2image
 requests>=2.31.0
 tqdm
 PyMuPDF
+opencv-python
+numpy
