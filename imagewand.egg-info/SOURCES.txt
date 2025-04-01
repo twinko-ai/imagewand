@@ -18,3 +18,7 @@ imagewand.egg-info/top_level.txt
 imagewand/plugins/__init__.py
 imagewand/plugins/custom_filters.py
 imagewand/scripts/merge_command.py
+tests/test_autofix.py
+tests/test_basic.py
+tests/test_cli.py
+tests/test_filters.py

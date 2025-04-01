@@ -3,8 +3,22 @@ Name: imagewand
 Version: 0.1.0
 Summary: A Python package for image resizing and PDF to image conversion
 Author-email: Tengfei Yin <tengfei@twinko.ai>
-License-Expression: MIT
-Requires-Python: >=3.7
+License: MIT
+Project-URL: Homepage, https://github.com/twinko-ai/imagewand
+Project-URL: Repository, https://github.com/twinko-ai/imagewand
+Project-URL: Documentation, https://github.com/twinko-ai/imagewand#readme
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Console
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Multimedia :: Graphics
+Classifier: Topic :: Utilities
+Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 Requires-Dist: Pillow
 Requires-Dist: pdf2image
@@ -14,8 +28,14 @@ Requires-Dist: PyMuPDF
 Requires-Dist: opencv-python
 Requires-Dist: numpy
 Requires-Dist: click
+Requires-Dist: black>=24.8.0
 
 # ImageWand
+
+[![Python Versions](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue)](https://github.com/twinko-ai/imagewand)
+[![Build Status](https://github.com/twinko-ai/imagewand/actions/workflows/ci.yml/badge.svg)](https://github.com/twinko-ai/imagewand/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-black.svg)](https://github.com/psf/black)
 
 A powerful command-line tool for image manipulation, including PDF to image conversion, image resizing, auto-fixing scanned images, applying filters, and merging scanned images.
 
@@ -69,18 +89,41 @@ imagewand resize input.jpg -o resized.jpg -w 800
 
 ### Auto-fix Scanned Images
 
-Automatically straighten and crop scanned images:
+Automatically crop and clean up scanned images with two specialized modes:
 
 ```bash
-# Basic usage
+# Frame mode - Extract photo from contrasting frame/background
+imagewand autofix scan.jpg -m frame
+imagewand autofix scan.jpg -m frame --margin -2  # More aggressive crop
+imagewand autofix scan.jpg -m frame --margin 5   # Add margin
+
+# Border mode - Remove white margins only
+imagewand autofix scan.jpg -m border
+imagewand autofix scan.jpg -m border -b -2  # More aggressive crop
+imagewand autofix scan.jpg -m border -b 5   # Keep more border
+
+# Auto mode (default) - Tries frame detection first, falls back to border removal
 imagewand autofix scan.jpg
 
 # Process entire directory
 imagewand autofix scans_folder/
-
-# Adjust border percentage
-imagewand autofix scan.jpg -b 10
 ```
+
+Cropping modes explained:
+- `frame`: Best for photos on contrasting backgrounds (e.g., artwork on black paper)
+  - Use `--margin` to adjust cropping (negative for tighter crop, positive for more margin)
+  - Default margin is -1 for slightly aggressive crop
+  
+- `border`: Best for documents with white margins
+  - Use `-b` to adjust border percentage (negative for tighter crop, positive to keep more border)
+  - Default border is 0 for exact content boundaries
+  
+- `auto`: Attempts frame detection first, falls back to border removal if no frame is detected
+
+Output filenames reflect the mode and parameters used:
+- Frame mode: `photo_frame.jpg` or `photo_frame_m2.jpg` (with margin 2)
+- Border mode: `photo_border.jpg` or `photo_border_b5.jpg` (with 5% border)
+- Auto mode: `photo_auto_frame.jpg` or `photo_auto_border.jpg`
 
 ### Apply Filters
 
@@ -124,24 +167,9 @@ Common filter parameters:
 
 The output filename will include the parameters used:
 
-### Merge Scanned Images
-
-Merge multiple scanned images into a single image:
-
-```bash
-# Merge specific images
-imagewand merge image1.jpg image2.jpg -o merged.jpg
-
-# Merge all images in a directory
-imagewand merge scans_folder/ -o merged.jpg
-
-# Enable debug mode for detailed output
-imagewand merge scans_folder/ -o merged.jpg --debug
-```
-
 ### Filter Presets
 
-Save frequently used filter combinations as presets:
+Save and reuse your favorite filter combinations as presets:
 
 ```bash
 # Save a filter combination as a preset
@@ -150,11 +178,34 @@ imagewand filter drawing.jpg -f "saturation:factor=1.2,contrast:factor=1.2,sharp
 # Apply the saved preset to an image
 imagewand filter drawing.jpg -p kids_drawing
 
+# Apply preset with custom output path
+imagewand filter drawing.jpg -p kids_drawing -o enhanced.jpg
+
 # List all available presets
 imagewand list-presets
 ```
 
-Presets are stored in `~/.imagewand_presets` and can be edited manually if needed.
+The presets are stored in `~/.imagewand_presets` file in INI format:
+```ini
+[presets]
+kids_drawing = saturation:factor=1.2,contrast:factor=1.2,sharpen:factor=1.2
+light_pencil = contrast:factor=1.8,contrast:factor=1.5,sharpen:factor=2.0
+colorful = saturation:factor=1.5,contrast:factor=1.3,brightness:factor=1.1
+```
+
+Common preset examples:
+```bash
+# For kids' pencil drawings
+imagewand filter drawing.jpg -f "contrast:factor=1.2,sharpen:factor=1.8" --save-preset pencil_drawing
+
+# For colorful artwork
+imagewand filter painting.jpg -f "saturation:factor=1.3,contrast:factor=1.2" --save-preset vibrant_art
+
+# For old photos
+imagewand filter photo.jpg -f "contrast:factor=1.4,brightness:factor=1.1,sharpen:factor=1.5" --save-preset photo_enhance
+```
+
+You can also edit the `~/.imagewand_presets` file directly to add or modify presets. The output filename will include the preset name:
 
 ## Common Use Cases
 
@@ -251,11 +302,16 @@ Let me know if you'd like me to add more filter combinations or specific example
 ## Tips
 
 1. Use `--debug` flag with any command for detailed output
-2. For merging scans:
+2. For autofix:
+   - Use `frame` mode for artwork on contrasting backgrounds
+   - Use `border` mode for documents with white margins
+   - Try negative margins/borders for more aggressive cropping
+   - Use positive margins/borders to keep more content
+3. For merging scans:
    - Remove white borders automatically
    - Images should have overlapping regions
    - Order matters when specifying individual files
-3. For PDF conversion:
+4. For PDF conversion:
    - Higher DPI values give better quality but larger files
    - PNG format is better for text documents
    - JPG is better for photos

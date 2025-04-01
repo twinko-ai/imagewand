@@ -6,3 +6,4 @@ PyMuPDF
 opencv-python
 numpy
 click
+black>=24.8.0

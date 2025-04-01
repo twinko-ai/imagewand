@@ -2,13 +2,7 @@ import os
 import fitz  # PyMuPDF
 
 
-def pdf_to_images(
-    pdf_path,
-    output_dir,
-    dpi=200,
-    format="jpg",
-    progress_callback=None
-):
+def pdf_to_images(pdf_path, output_dir, dpi=200, format="jpg", progress_callback=None):
     """
     Convert a PDF file to a series of images.
 
@@ -50,6 +44,6 @@ def pdf_to_images(
         # Call progress callback if provided
         if progress_callback:
             progress_callback(page_num + 1)
-                
+
     doc.close()
     return image_files
