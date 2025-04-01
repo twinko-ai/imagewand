@@ -3,7 +3,7 @@ name = "imagewand"
 version = "0.1.0"
 description = "A Python package for image resizing and PDF to image conversion"
 authors = [{ name = "Tengfei Yin", email = "tengfei@twinko.ai" }]
-license = "MIT"
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
@@ -15,12 +15,12 @@ dependencies = [
     "opencv-python",
     "numpy",
     "click",
+    "black>=24.8.0",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -59,6 +59,11 @@ omit = ["tests/*", "setup.py"]
 line-length = 88
 target-version = ['py38']
 include = '\.pyi?$'
+extend-exclude = '''
+# A regex preceded with ^/ will apply only to files and directories
+# in the root of the project.
+^/docs
+'''
 
 [tool.isort]
 profile = "black"
