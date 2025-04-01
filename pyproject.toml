@@ -1,8 +1,8 @@
 [project]
 name = "imagewand"
 version = "0.1.0"
-description = "A powerful command-line tool for image manipulation"
-authors = [{ name = "twinko-ai", email = "tengfei@twinko.ai" }]
+description = "A Python package for image resizing and PDF to image conversion"
+authors = [{ name = "Tengfei Yin", email = "tengfei@twinko.ai" }]
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.8"
@@ -16,6 +16,7 @@ dependencies = [
     "numpy",
     "click",
     "black>=24.8.0",
+    "isort>=5.12.0",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -63,4 +64,8 @@ include = '\.pyi?$'
 [tool.isort]
 profile = "black"
 multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 88
 
