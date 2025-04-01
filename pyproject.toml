@@ -5,7 +5,7 @@ description = "A Python package for image resizing and PDF to image conversion"
 authors = [{ name = "Tengfei Yin", email = "tengfei@twinko.ai" }]
 license = "MIT"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
     "Pillow",
     "pdf2image",
@@ -15,6 +15,20 @@ dependencies = [
     "opencv-python",
     "numpy",
     "click",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Utilities",
 ]
 
 [build-system]
@@ -26,4 +40,27 @@ imagewand = "imagewand.cli:main"
 resize-images = "imagewand.resize:resize_image"
 pdf-to-images = "imagewand.pdf2img:pdf_to_images"
 imagewand-merge = "imagewand.scripts.merge_command:merge"
+
+[project.urls]
+Homepage = "https://github.com/twinko-ai/imagewand"
+Repository = "https://github.com/twinko-ai/imagewand"
+Documentation = "https://github.com/twinko-ai/imagewand#readme"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=imagewand --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["imagewand"]
+omit = ["tests/*", "setup.py"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
 

@@ -1,5 +1,12 @@
 # ImageWand
 
+[![PyPI version](https://badge.fury.io/py/imagewand.svg)](https://pypi.org/project/imagewand)
+[![Python Versions](https://img.shields.io/pypi/pyversions/imagewand.svg)](https://pypi.org/project/imagewand)
+[![Build Status](https://github.com/twinko-ai/imagewand/workflows/CI/badge.svg)](https://github.com/twinko-ai/imagewand/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Downloads](https://static.pepy.tech/badge/imagewand)](https://pepy.tech/project/imagewand)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 A powerful command-line tool for image manipulation, including PDF to image conversion, image resizing, auto-fixing scanned images, applying filters, and merging scanned images.
 
 ## Installation

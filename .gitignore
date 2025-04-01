@@ -1,11 +1,5 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.pyw
-*.pyz
-*.pywz
 *.py[cod]
 *$py.class
 *.so
@@ -26,11 +20,14 @@ wheels/
 .installed.cfg
 *.egg
 
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
 # Virtual Environment
-.env
-.venv
-env/
 venv/
+env/
 ENV/
 
 # IDE
@@ -38,6 +35,8 @@ ENV/
 .vscode/
 *.swp
 *.swo
+
+# OS
 .DS_Store
 
 # ImageWand specific
@@ -52,13 +51,9 @@ ENV/
 
 # Test
 .pytest_cache/
-.coverage
-htmlcov/
 .tox/
 
 # Distribution
-dist/
-build/
 *.tar.gz
 
 # Logs
