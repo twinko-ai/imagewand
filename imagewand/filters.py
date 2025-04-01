@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image, ImageFilter, ImageEnhance, ImageOps, ImageChops
 import cv2
 from typing import Callable, List, Dict, Union, Tuple
+from tqdm import tqdm
 
 # Define filter type
 FilterFunction = Callable[[Image.Image, Dict], Image.Image]
@@ -392,6 +393,32 @@ def watercolor_effect(img: Image.Image, params: Dict = None) -> Image.Image:
 
 # ===== Filter Application Functions =====
 
+def parse_filter_string(filter_string: str) -> Tuple[str, dict]:
+    """Parse filter string like 'contrast:factor=1.2' into (name, params)"""
+    if ':' in filter_string:
+        name, params_str = filter_string.split(':', 1)
+        params = {}
+        for param in params_str.split(','):
+            if '=' in param:
+                key, value = param.split('=')
+                # Convert string value to float if possible
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
+                params[key] = value
+        return name, params
+    return filter_string, {}
+
+def create_filter_suffix(filter_string: str) -> str:
+    """Create a filename suffix from filter string including parameters"""
+    name, params = parse_filter_string(filter_string)
+    if params:
+        # Convert parameters to string, e.g. "contrast_f1.2"
+        param_str = '_'.join(f"{k[0]}{v}" for k, v in params.items())
+        return f"{name}_{param_str}"
+    return name
+
 def apply_filter(image_path: str, filter_name: str, output_path: str = None, 
                 params: Dict = None, progress_callback: Callable = None) -> str:
     """
@@ -442,99 +469,75 @@ def apply_filter(image_path: str, filter_name: str, output_path: str = None,
     return output_path
 
 def apply_filters(image_path: str, filter_names: List[str], output_path: str = None, 
-                 params_list: List[Dict] = None, progress_callback: Callable = None) -> str:
-    """
-    Apply multiple filters to an image in sequence
-    
-    Args:
-        image_path: Path to the input image
-        filter_names: List of filter names to apply in sequence
-        output_path: Path to save the filtered image
-        params_list: List of parameter dictionaries for each filter
-        progress_callback: Optional callback function for progress updates
-        
-    Returns:
-        Path to the filtered image
-    """
-    if not filter_names:
-        return image_path
-    
-    # Create default output path if not provided
-    if output_path is None:
-        file_dir = os.path.dirname(image_path)
-        file_name, file_ext = os.path.splitext(os.path.basename(image_path))
-        filter_suffix = "_".join(filter_names)
-        output_path = os.path.join(file_dir, f"{file_name}_{filter_suffix}{file_ext}")
-    
-    # Open the image
+                 params: List[dict] = None, progress_callback=None) -> str:
+    """Apply a sequence of filters to an image"""
+    print(f"Loading image: {image_path}")
     img = Image.open(image_path)
-    
-    # Prepare parameters
-    if params_list is None:
-        params_list = [None] * len(filter_names)
-    
-    # Apply filters in sequence
-    total_filters = len(filter_names)
-    for i, (filter_name, params) in enumerate(zip(filter_names, params_list)):
-        if filter_name not in FILTERS:
-            raise ValueError(f"Filter '{filter_name}' not found. Available filters: {list(FILTERS.keys())}")
-        
-        # Apply the filter
-        filter_func = FILTERS[filter_name]
-        img = filter_func(img, params)
-        
-        # Update progress
-        if progress_callback:
-            progress = int(((i + 1) / total_filters) * 100)
-            progress_callback(progress)
-    
-    # Save the filtered image
+    if img is None:
+        raise ValueError(f"Could not load image: {image_path}")
+
+    # Create descriptive suffix from all filters
+    filter_desc = '_'.join(create_filter_suffix(f) for f in filter_names)
+
+    if output_path is None:
+        base, ext = os.path.splitext(image_path)
+        output_path = f"{base}_{filter_desc}{ext}"
+
+    with tqdm(total=len(filter_names), desc="Applying filters") as pbar:
+        for i, filter_string in enumerate(filter_names):
+            # Parse filter name and parameters
+            filter_name, filter_params = parse_filter_string(filter_string)
+            
+            if filter_name not in FILTERS:
+                raise ValueError(f"Filter '{filter_name}' not found. Available filters: {list(FILTERS.keys())}")
+            
+            pbar.set_description(f"Applying {filter_string}")
+            
+            # Apply filter directly using the filter function
+            filter_func = FILTERS[filter_name]
+            img = filter_func(img, filter_params)
+            
+            pbar.update(1)
+            
+            if progress_callback:
+                progress_callback((i + 1) * 100 // len(filter_names))
+
+    print(f"Saving filtered image to: {output_path}")
     img.save(output_path)
-    
+    print("Done!")
+
     return output_path
 
-def batch_apply_filters(image_paths: List[str], filter_names: List[str], output_dir: str = None,
-                       params_list: List[Dict] = None, progress_callback: Callable = None) -> List[str]:
-    """
-    Apply filters to multiple images
-    
-    Args:
-        image_paths: List of paths to input images
-        filter_names: List of filter names to apply in sequence
-        output_dir: Directory to save filtered images
-        params_list: List of parameter dictionaries for each filter
-        progress_callback: Optional callback function for progress updates
-        
-    Returns:
-        List of paths to filtered images
-    """
-    if not image_paths:
-        return []
-    
-    # Create output directory if not provided
-    if output_dir is None:
-        # Use the directory of the first image
-        output_dir = os.path.join(os.path.dirname(image_paths[0]), "filtered_images")
-    
-    os.makedirs(output_dir, exist_ok=True)
-    
+def batch_apply_filters(image_paths: List[str], filter_names: List[str], 
+                       output_dir: str, params: List[dict] = None,
+                       progress_callback=None) -> List[str]:
+    """Apply filters to multiple images"""
     output_paths = []
-    total_images = len(image_paths)
     
-    for i, image_path in enumerate(image_paths):
-        # Create output path for this image
-        file_name, file_ext = os.path.splitext(os.path.basename(image_path))
-        filter_suffix = "_".join(filter_names)
-        output_path = os.path.join(output_dir, f"{file_name}_{filter_suffix}{file_ext}")
-        
-        # Apply filters to this image
-        apply_filters(image_path, filter_names, output_path, params_list)
-        output_paths.append(output_path)
-        
-        # Update progress
-        if progress_callback:
-            progress = int(((i + 1) / total_images) * 100)
-            progress_callback(progress)
+    # Create progress bar for all images
+    with tqdm(total=len(image_paths), desc="Processing images") as pbar:
+        for i, image_path in enumerate(image_paths):
+            # Show current image being processed
+            pbar.set_description(f"Processing {os.path.basename(image_path)}")
+            
+            # Create output path
+            output_name = f"{os.path.splitext(os.path.basename(image_path))[0]}_filtered.jpg"
+            output_path = os.path.join(output_dir, output_name)
+            
+            try:
+                # Apply filters with nested progress
+                result_path = apply_filters(
+                    image_path, 
+                    filter_names,
+                    output_path,
+                    params,
+                    lambda p: progress_callback(((i * 100) + p) / len(image_paths))
+                )
+                output_paths.append(result_path)
+            except Exception as e:
+                print(f"Error processing {image_path}: {str(e)}")
+            
+            pbar.update(1)
     
     return output_paths
 

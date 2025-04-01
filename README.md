@@ -83,20 +83,69 @@ imagewand filter images/ -f grayscale -r
 imagewand list-filters
 ```
 
-### Merge Scanned Images
+### Filter Parameters
 
-Merge multiple scanned images into a single image:
+You can customize filter parameters using the format `filtername:param=value`:
 
 ```bash
-# Merge specific images
-imagewand merge image1.jpg image2.jpg -o merged.jpg
+# Adjust contrast level (default is 1.5)
+imagewand filter drawing.jpg -f "contrast:factor=1.2"
 
-# Merge all images in a directory
-imagewand merge scans_folder/ -o merged.jpg
+# Multiple filters with custom parameters
+imagewand filter drawing.jpg -f "saturation:factor=1.3,contrast:factor=1.2,sharpen:factor=1.8"
 
-# Enable debug mode for detailed output
-imagewand merge scans_folder/ -o merged.jpg --debug
+# Mix of default and custom parameters
+imagewand filter drawing.jpg -f "saturation:factor=1.3,contrast,sharpen:factor=2.0"
 ```
+
+Common filter parameters:
+- `contrast:factor=1.2` - Lighter contrast (default: 1.5)
+- `sharpen:factor=1.8` - Stronger sharpening (default: 2.0)
+- `blur:radius=3` - Control blur strength (default: 2)
+- `brightness:factor=1.2` - Adjust brightness (default: 1.5)
+- `saturation:factor=1.3` - Control color saturation (default: 1.5)
+
+The output filename will include the parameters used:
+
+### Filter Presets
+
+Save and reuse your favorite filter combinations as presets:
+
+```bash
+# Save a filter combination as a preset
+imagewand filter drawing.jpg -f "saturation:factor=1.2,contrast:factor=1.2,sharpen:factor=1.2" --save-preset kids_drawing
+
+# Apply the saved preset to an image
+imagewand filter drawing.jpg -p kids_drawing
+
+# Apply preset with custom output path
+imagewand filter drawing.jpg -p kids_drawing -o enhanced.jpg
+
+# List all available presets
+imagewand list-presets
+```
+
+The presets are stored in `~/.imagewand_presets` file in INI format:
+```ini
+[presets]
+kids_drawing = saturation:factor=1.2,contrast:factor=1.2,sharpen:factor=1.2
+light_pencil = contrast:factor=1.8,contrast:factor=1.5,sharpen:factor=2.0
+colorful = saturation:factor=1.5,contrast:factor=1.3,brightness:factor=1.1
+```
+
+Common preset examples:
+```bash
+# For kids' pencil drawings
+imagewand filter drawing.jpg -f "contrast:factor=1.2,sharpen:factor=1.8" --save-preset pencil_drawing
+
+# For colorful artwork
+imagewand filter painting.jpg -f "saturation:factor=1.3,contrast:factor=1.2" --save-preset vibrant_art
+
+# For old photos
+imagewand filter photo.jpg -f "contrast:factor=1.4,brightness:factor=1.1,sharpen:factor=1.5" --save-preset photo_enhance
+```
+
+You can also edit the `~/.imagewand_presets` file directly to add or modify presets. The output filename will include the preset name:
 
 ## Common Use Cases
 
@@ -129,6 +178,67 @@ imagewand resize images/ -w 1024
 imagewand filter images/ -f "sharpen,contrast" -r
 ```
 
+
+## Special Use Cases
+
+### Enhancing Kids' Drawings
+
+To make scanned pencil drawings look better, you can try these filter combinations:
+
+```bash
+# Basic enhancement for light pencil drawings
+imagewand filter drawing.jpg -f "contrast,sharpen"
+
+# For very light drawings, use this sequence
+imagewand filter drawing.jpg -f "contrast,contrast,sharpen"
+
+# To make colors pop (for colored pencils)
+imagewand filter drawing.jpg -f "saturation,contrast,sharpen"
+
+# To clean up the background and enhance lines
+imagewand filter drawing.jpg -f "threshold,sharpen"
+
+# For preserving light details while enhancing contrast
+imagewand filter drawing.jpg -f "adaptive_contrast,sharpen"
+```
+
+Tips for scanning kids' drawings:
+1. Scan in color mode even for pencil drawings
+2. Use at least 300 DPI for better detail
+3. Make sure the paper is flat on the scanner
+4. Clean the scanner glass for best results
+
+Common filter combinations explained:
+- `contrast,sharpen`: Best for regular pencil drawings
+- `saturation,contrast`: Great for colored pencil art
+- `threshold`: Good for line drawings and sketches
+- `adaptive_contrast`: Best for drawings with varying pressure
+- `denoise,sharpen`: Helpful for rough paper texture
+
+Example workflow:
+```bash
+# First, auto-fix the scanned drawing to straighten and crop
+imagewand autofix drawing.jpg -o fixed.jpg
+
+# Then apply enhancement filters
+imagewand filter fixed.jpg -f "contrast,sharpen" -o enhanced.jpg
+```
+
+For batch processing multiple drawings:
+```bash
+# Enhance all drawings in a folder
+imagewand filter drawings_folder/ -f "contrast,sharpen" -o enhanced_drawings/
+```
+```
+
+This section provides:
+1. Specific filter combinations for different types of drawings
+2. Tips for scanning
+3. Explanation of each filter combination
+4. Complete workflow examples
+5. Batch processing instructions
+
+Let me know if you'd like me to add more filter combinations or specific examples!
 ## Tips
 
 1. Use `--debug` flag with any command for detailed output

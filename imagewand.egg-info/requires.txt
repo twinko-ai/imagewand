@@ -5,3 +5,4 @@ tqdm
 PyMuPDF
 opencv-python
 numpy
+click

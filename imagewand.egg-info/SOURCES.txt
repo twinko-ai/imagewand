@@ -5,6 +5,7 @@ imagewand/__init__.py
 imagewand/autofix.py
 imagewand/automerge.py
 imagewand/cli.py
+imagewand/config.py
 imagewand/filters.py
 imagewand/pdf2img.py
 imagewand/resize.py
