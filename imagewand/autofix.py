@@ -4,181 +4,336 @@ from PIL import Image
 import os
 import math
 
-def autofix(input_path, output_path=None, border_percent=0, progress_callback=None):
+def autofix(input_path, output_path=None, border_percent=-1, progress_callback=None):
     """
-    Automatically detect, straighten, and crop an image to remove excess white space.
+    Remove white margins only, keeping the actual content and frame intact.
     
     Args:
         input_path (str): Path to the input image
-        output_path (str): Path to save the processed image (if None, will use input_path with '_fixed' suffix)
-        border_percent (float): Percentage of border to keep around the detected content (0-100)
+        output_path (str): Path to save the processed image
+        border_percent: Percentage of border (-5 to crop more aggressively, 
+                       positive to keep more border, default: -1)
         progress_callback (callable): Optional callback function for progress updates
-        
-    Returns:
-        str: Path to the processed image
     """
-    if progress_callback:
-        progress_callback(5)  # 5% - Starting
+    img = cv2.imread(input_path)
+    if img is None:
+        raise ValueError(f"Could not load image: {input_path}")
+
+    # Convert to grayscale
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    # Create default output path if not provided
-    if output_path is None:
-        file_dir = os.path.dirname(input_path)
-        file_name, file_ext = os.path.splitext(os.path.basename(input_path))
-        output_path = os.path.join(file_dir, f"autofix_{file_name}{file_ext}")
+    # Even more aggressive threshold for white margins
+    _, binary = cv2.threshold(gray, 240, 255, cv2.THRESH_BINARY_INV)  # Lowered to 240
     
-    # Open image with PIL first (for broader format support)
-    pil_img = Image.open(input_path)
+    # More aggressive noise cleanup
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))  # Increased kernel size
+    binary = cv2.morphologyEx(binary, cv2.MORPH_DILATE, kernel)  # Dilate to connect content
+    binary = cv2.morphologyEx(binary, cv2.MORPH_ERODE, kernel)   # Erode to remove noise
     
-    if progress_callback:
-        progress_callback(10)  # 10% - Image loaded
-    
-    # Convert to numpy array for OpenCV processing
-    img = np.array(pil_img)
-    
-    # Convert to grayscale if it's not already
-    if len(img.shape) == 3:
-        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    else:
-        gray = img.copy()
-    
-    if progress_callback:
-        progress_callback(20)  # 20% - Converted to grayscale
-    
-    # Apply adaptive thresholding for better edge detection
-    # This works better for varying lighting conditions and different types of content
-    binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                  cv2.THRESH_BINARY_INV, 11, 2)
-    
-    # Apply morphological operations to clean up the binary image
-    kernel = np.ones((5, 5), np.uint8)
-    binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
-    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
-    
-    # Find contours
+    # Find contours of non-white regions
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    if progress_callback:
-        progress_callback(30)  # 30% - Found contours
-    
     if not contours:
-        # Try a different thresholding approach
-        _, binary = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
-        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        if not contours:
-            print("No content detected in the image.")
-            pil_img.save(output_path)
-            return output_path
-    
-    # Filter small contours (noise)
-    min_contour_area = img.shape[0] * img.shape[1] * 0.001  # 0.1% of image area
-    significant_contours = [c for c in contours if cv2.contourArea(c) > min_contour_area]
-    
-    if not significant_contours:
-        significant_contours = contours
-    
-    # Combine all significant contours
-    all_contours = np.vstack(significant_contours)
-    
-    # Get the minimum area rectangle that contains all contours
-    rect = cv2.minAreaRect(all_contours)
-    box = cv2.boxPoints(rect)
-    box = np.int0(box)
-    
-    if progress_callback:
-        progress_callback(40)  # 40% - Found bounding box
-    
-    # Get the angle of the rectangle
-    center, (width, height), angle = rect
-    
-    # OpenCV's angle is different from what we need for rotation
-    # If width < height, the angle needs to be adjusted
-    if width < height:
-        angle = angle - 90
-    
-    # Adjust angle to be between -45 and 45 degrees
-    if angle < -45:
-        angle = 90 + angle
-    elif angle > 45:
-        angle = angle - 90
-    
-    if progress_callback:
-        progress_callback(50)  # 50% - Calculated rotation angle
-    
-    # Only rotate if the angle is significant (more than 1 degree)
-    if abs(angle) > 1:
-        # Rotate the image to straighten it
-        h, w = img.shape[:2]
-        center = (w // 2, h // 2)
-        M = cv2.getRotationMatrix2D(center, angle, 1.0)
-        rotated = cv2.warpAffine(img, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=(255, 255, 255))
-    else:
-        rotated = img.copy()
-    
-    if progress_callback:
-        progress_callback(70)  # 70% - Rotated image
-    
-    # Convert back to grayscale and threshold again to find the content in the straightened image
-    if len(rotated.shape) == 3:
-        rotated_gray = cv2.cvtColor(rotated, cv2.COLOR_RGB2GRAY)
-    else:
-        rotated_gray = rotated.copy()
-    
-    # Use Otsu's thresholding for better content detection
-    _, rotated_binary = cv2.threshold(rotated_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    
-    # Apply morphological operations to clean up the binary image
-    rotated_binary = cv2.morphologyEx(rotated_binary, cv2.MORPH_CLOSE, kernel)
-    rotated_binary = cv2.morphologyEx(rotated_binary, cv2.MORPH_OPEN, kernel)
-    
-    rotated_contours, _ = cv2.findContours(rotated_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
-    if not rotated_contours:
-        print("No content detected after rotation.")
-        pil_img.save(output_path)
+        print("No content detected in the image.")
+        if output_path is None:
+            output_path = input_path.replace('.', '_fixed.')
+        cv2.imwrite(output_path, img)
         return output_path
     
-    # Filter small contours again
-    significant_rotated_contours = [c for c in rotated_contours if cv2.contourArea(c) > min_contour_area]
-    
-    if not significant_rotated_contours:
-        significant_rotated_contours = rotated_contours
-    
-    # Find the bounding box of all contours
-    x_min, y_min = rotated.shape[1], rotated.shape[0]
+    # Find exact bounding box of all content
+    x_min, y_min = img.shape[1], img.shape[0]
     x_max, y_max = 0, 0
     
-    for contour in significant_rotated_contours:
-        x, y, cw, ch = cv2.boundingRect(contour)
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
         x_min = min(x_min, x)
         y_min = min(y_min, y)
-        x_max = max(x_max, x + cw)
-        y_max = max(y_max, y + ch)
+        x_max = max(x_max, x + w)
+        y_max = max(y_max, y + h)
     
-    if progress_callback:
-        progress_callback(80)  # 80% - Found crop area
+    # Apply border percentage (now handles negative values)
+    border_x = int((x_max - x_min) * abs(border_percent) / 100)
+    border_y = int((y_max - y_min) * abs(border_percent) / 100)
     
-    # Add border if requested
-    if border_percent > 0:
-        border_x = int((x_max - x_min) * border_percent / 100)
-        border_y = int((y_max - y_min) * border_percent / 100)
-        
+    if border_percent >= 0:
+        # Add border
         x_min = max(0, x_min - border_x)
         y_min = max(0, y_min - border_y)
-        x_max = min(rotated.shape[1], x_max + border_x)
-        y_max = min(rotated.shape[0], y_max + border_y)
+        x_max = min(img.shape[1], x_max + border_x)
+        y_max = min(img.shape[0], y_max + border_y)
+    else:
+        # Crop more aggressively
+        x_min = min(x_min + border_x, x_max)
+        y_min = min(y_min + border_y, y_max)
+        x_max = max(x_max - border_x, x_min)
+        y_max = max(y_max - border_y, y_min)
+    
+    # Crop exactly at the bounds
+    cropped = img[y_min:y_max, x_min:x_max]
+    
+    if output_path is None:
+        base, ext = os.path.splitext(input_path)
+        suffix = f"_border_b{border_percent}" if border_percent > 0 else "_border"
+        output_path = f"{base}{suffix}{ext}"
+    
+    cv2.imwrite(output_path, cropped)
+    return output_path
+
+def crop_dark_background(image_path: str, output_path: str = None, threshold: int = 30) -> str:
+    """
+    Crop out dark/black background, keeping only the main image content.
+    Specifically designed for photos on black paper backgrounds.
+    """
+    # Read image
+    img = cv2.imread(image_path)
+    if img is None:
+        raise ValueError(f"Could not load image: {image_path}")
+
+    # Convert to grayscale
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Simple thresholding to find very dark regions
+    _, dark_mask = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
+    
+    # Find edges in the image
+    edges = cv2.Canny(gray, 100, 200)
+    
+    # Dilate edges to connect them
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
+    edges = cv2.dilate(edges, kernel, iterations=2)
+    
+    # Combine edge detection with threshold
+    content_mask = cv2.bitwise_or(dark_mask, edges)
+    
+    # Close gaps in the mask
+    content_mask = cv2.morphologyEx(content_mask, cv2.MORPH_CLOSE, kernel, iterations=3)
+    
+    # Find contours in the mask
+    contours, _ = cv2.findContours(content_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    if not contours:
+        raise ValueError("No content found in image")
+    
+    # Find the largest contour
+    main_contour = max(contours, key=cv2.contourArea)
+    
+    # Get the minimum area rectangle
+    rect = cv2.minAreaRect(main_contour)
+    box = cv2.boxPoints(rect)
+    box = np.array(box, dtype=np.int32)
+    
+    # Get bounding rectangle
+    x, y, w, h = cv2.boundingRect(box)
+    
+    # Add minimal padding
+    pad_x = int(w * 0.005)  # 0.5% padding
+    pad_y = int(h * 0.005)
+    
+    # Ensure padding doesn't exceed image bounds
+    x = max(0, x - pad_x)
+    y = max(0, y - pad_y)
+    w = min(img.shape[1] - x, w + 2 * pad_x)
+    h = min(img.shape[0] - y, h + 2 * pad_y)
     
     # Crop the image
-    cropped = rotated[y_min:y_max, x_min:x_max]
+    cropped = img[y:y+h, x:x+w]
     
-    if progress_callback:
-        progress_callback(90)  # 90% - Cropped image
+    # Create output path if not specified
+    if output_path is None:
+        base, ext = os.path.splitext(image_path)
+        output_path = f"{base}_cropped{ext}"
     
-    # Convert back to PIL and save
-    result_img = Image.fromarray(cropped)
-    result_img.save(output_path)
+    # Save result
+    cv2.imwrite(output_path, cropped)
+    return output_path
+
+def crop_framed_photo(image_path: str, output_path: str = None, margin: int = -1) -> str:
+    """
+    Detect and crop the main photo from any contrasting background/frame,
+    with more lenient frame detection.
+    """
+    img = cv2.imread(image_path)
+    if img is None:
+        raise ValueError(f"Could not load image: {image_path}")
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    if progress_callback:
-        progress_callback(100)  # 100% - Saved image
+    # More lenient edge detection
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)  # Reduced blur kernel
+    edges = cv2.Canny(blurred, 30, 120)  # Lower thresholds for more edges
     
-    return output_path 
+    # Analyze content distribution
+    rows = np.sum(edges, axis=1)
+    cols = np.sum(edges, axis=0)
+    
+    # More lenient gradient thresholds
+    row_gradient = np.gradient(rows)
+    col_gradient = np.gradient(cols)
+    
+    row_thresh = np.max(np.abs(row_gradient)) * 0.15  # Reduced from 0.2
+    col_thresh = np.max(np.abs(col_gradient)) * 0.15  # Reduced from 0.2
+    
+    # Find content boundaries
+    top_indices = np.where(np.abs(row_gradient) > row_thresh)[0]
+    left_indices = np.where(np.abs(col_gradient) > col_thresh)[0]
+    
+    if len(top_indices) == 0 or len(left_indices) == 0:
+        raise ValueError("No clear content boundaries found")
+        
+    top = top_indices[0]
+    bottom = top_indices[-1]
+    left = left_indices[0]
+    right = left_indices[-1]
+    
+    # More lenient edge connection
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7,7))  # Reduced from 11x11
+    dilated = cv2.dilate(edges, kernel, iterations=2)  # Reduced iterations
+    
+    # Find contours with more lenient parameters
+    contours, _ = cv2.findContours(dilated, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    
+    if not contours:
+        raise ValueError("No content found in image")
+    
+    # More lenient contour filtering
+    img_area = img.shape[0] * img.shape[1]
+    filtered_contours = []
+    
+    content_width = right - left
+    content_height = bottom - top
+    min_area = (content_width * content_height) * 0.6  # Reduced from 0.8
+    max_area = img_area * 0.99  # Increased from 0.98
+    
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area < min_area or area > max_area:
+            continue
+            
+        peri = cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, 0.04 * peri, True)  # More lenient approximation
+        if len(approx) >= 4:  # Removed upper bound check
+            filtered_contours.append(contour)
+    
+    if not filtered_contours:
+        # Fall back to content boundaries if no suitable contours found
+        x, y = left, top
+        w, h = right - left, bottom - top
+        # Create a rectangular contour
+        best_contour = np.array([[x,y], [x+w,y], [x+w,y+h], [x,y+h]]).reshape(-1,1,2)
+    else:
+        # Find best contour with more weight on content coverage
+        best_contour = None
+        best_score = float('inf')
+        
+        for contour in filtered_contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            
+            # Adjust scoring to favor content coverage
+            boundary_score = (
+                abs(x - left) + 
+                abs((x + w) - right) + 
+                abs(y - top) + 
+                abs((y + h) - bottom)
+            ) / (w + h)
+            
+            area = cv2.contourArea(contour)
+            rect_area = w * h
+            coverage_score = 1 - (area / rect_area)
+            
+            # More emphasis on boundary matching
+            score = boundary_score * 0.8 + coverage_score * 0.2
+            
+            if score < best_score:
+                best_score = score
+                best_contour = contour
+    
+    # Get bounding rectangle
+    x, y, w, h = cv2.boundingRect(best_contour)
+    
+    # Apply margin with more aggressive content-aware adjustments
+    if margin >= 0:
+        x = max(0, x - margin)
+        y = max(0, y - margin)
+        w = min(img.shape[1] - x, w + 2 * margin)
+        h = min(img.shape[0] - y, h + 2 * margin)
+    else:
+        margin = abs(margin)
+        # Analyze wider strips for better density estimation
+        analyze_width = max(margin * 2, 20)
+        
+        left_density = np.mean(gray[y:y+h, x:x+analyze_width])
+        right_density = np.mean(gray[y:y+h, x+w-analyze_width:x+w])
+        top_density = np.mean(gray[y:y+analyze_width, x:x+w])
+        bottom_density = np.mean(gray[y+h-analyze_width:y+h, x:x+w])
+        
+        # Dynamic cropping factors based on density differences
+        left_factor = 1.5 if left_density > 200 else 0.8
+        right_factor = 1.5 if right_density > 200 else 0.8
+        top_factor = 1.5 if top_density > 200 else 0.8
+        bottom_factor = 1.5 if bottom_density > 200 else 0.8
+        
+        # Apply asymmetric cropping
+        x = min(x + int(margin * left_factor), x + w - 1)
+        w = max(w - int(margin * (left_factor + right_factor)), 1)
+        y = min(y + int(margin * top_factor), y + h - 1)
+        h = max(h - int(margin * (top_factor + bottom_factor)), 1)
+    
+    # Crop the image
+    cropped = img[y:y+h, x:x+w]
+    
+    # Create output path if not specified
+    if output_path is None:
+        base, ext = os.path.splitext(image_path)
+        if margin != -1:
+            suffix = f"_frame_m{margin}"
+        else:
+            suffix = "_frame"
+        output_path = f"{base}{suffix}{ext}"
+    
+    cv2.imwrite(output_path, cropped)
+    return output_path
+
+def crop_with_content_detection(
+    image_path: str,
+    output_path: str = None,
+    mode: str = "auto",
+    threshold: int = 30,
+    border_percent: float = -1,
+    margin: int = -1
+) -> str:
+    """
+    Enhanced crop function that supports different cropping modes.
+
+    Args:
+        image_path: Path to input image
+        output_path: Path to save cropped image (optional)
+        mode: Cropping mode:
+            - 'frame': Extract photo from contrasting frame/background
+            - 'border': Remove white margins only, keep the frame intact
+            - 'auto': Try frame detection first, fall back to border removal
+        threshold: Brightness threshold (0-255)
+        border_percent: Percentage of border to keep (for 'border' mode)
+        margin: Margin in pixels (-ve for more aggressive crop, +ve for more margin)
+    """
+    if mode == "frame":
+        return crop_framed_photo(image_path, output_path, margin=margin)
+    elif mode == "border":
+        return autofix(image_path, output_path, border_percent=border_percent)
+    else:  # auto mode
+        try:
+            result = crop_framed_photo(image_path, output_path, margin=margin)
+            if output_path is None:
+                base, ext = os.path.splitext(image_path)
+                new_path = f"{base}_auto_frame{ext}"
+                os.rename(result, new_path)
+                return new_path
+            return result
+        except ValueError:
+            result = autofix(image_path, output_path, border_percent=border_percent)
+            if output_path is None:
+                base, ext = os.path.splitext(image_path)
+                suffix = f"_auto_border_b{border_percent}" if border_percent != 0 else "_auto_border"
+                new_path = f"{base}{suffix}{ext}"
+                os.rename(result, new_path)
+                return new_path
+            return result 

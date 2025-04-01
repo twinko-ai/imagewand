@@ -5,7 +5,7 @@ import os
 from tqdm import tqdm
 from .pdf2img import pdf_to_images
 from .resize import resize_image
-from .autofix import autofix
+from .autofix import autofix, crop_with_content_detection, crop_framed_photo
 import glob
 from .filters import apply_filter, apply_filters, batch_apply_filters, list_filters
 import cv2
@@ -51,7 +51,22 @@ def main():
     autofix_parser = subparsers.add_parser("autofix", help="Automatically straighten and crop scanned images")
     autofix_parser.add_argument("image_path", help="Path to the image file or directory of images")
     autofix_parser.add_argument("-o", "--output", help="Output path or directory", default=None)
-    autofix_parser.add_argument("-b", "--border", help="Percentage of border to keep around content", type=float, default=5)
+    autofix_parser.add_argument("-b", "--border", 
+                               help="Percentage of border (-5 to crop more aggressively, positive to keep more border)",
+                               type=float,
+                               default=-1)
+    autofix_parser.add_argument("--margin",
+                               help="Margin in pixels (-5 for aggressive crop, positive for more margin)",
+                               type=int,
+                               default=-1)
+    autofix_parser.add_argument("-m", "--mode", 
+                               choices=['auto', 'frame', 'border'],
+                               default='auto',
+                               help="Cropping mode: frame (detect framed photo), border (remove margins), or auto")
+    autofix_parser.add_argument("-t", "--threshold",
+                               type=int,
+                               default=30,
+                               help="Brightness threshold for content detection")
     
     # Filter command
     filter_parser = subparsers.add_parser("filter", help="Apply filters to images")
@@ -148,98 +163,24 @@ def main():
             print_execution_time(start_time)
         
         elif args.command == "autofix":
-            # Check if input is a directory
-            if os.path.isdir(args.image_path):
-                # Get all image files
-                image_pattern = "*.jpg"
-                image_paths = glob.glob(os.path.join(args.image_path, image_pattern))
-                
-                # Add other common image formats
-                for ext in ["*.png", "*.jpeg", "*.bmp", "*.tiff", "*.gif"]:
-                    image_paths.extend(glob.glob(os.path.join(args.image_path, ext)))
-                
-                if not image_paths:
-                    print(f"No images found in {args.image_path}")
-                    return 1
-                
-                # Create output directory
-                if args.output is None:
-                    output_dir = os.path.join(os.path.dirname(args.image_path), f"autofix_{os.path.basename(args.image_path)}")
+            try:
+                if args.mode == "frame":
+                    result = crop_framed_photo(args.image_path, args.output, margin=args.margin)
+                elif args.mode == "border":
+                    result = autofix(args.image_path, args.output, border_percent=args.border)
                 else:
-                    output_dir = args.output
-                
-                os.makedirs(output_dir, exist_ok=True)
-                
-                # Process all images with progress bar
-                print(f"Auto-fixing {len(image_paths)} images...")
-                
-                processed_files = []
-                with tqdm(total=len(image_paths), desc="Processing images") as pbar:
-                    for image_path in image_paths:
-                        # Create output path for this image
-                        file_name = os.path.basename(image_path)
-                        output_path = os.path.join(output_dir, file_name)
-                        
-                        # Process with progress callback
-                        last_progress = 0
-                        
-                        def progress_callback(percent):
-                            nonlocal last_progress
-                            # We don't update the main progress bar here to avoid confusion
-                            pass
-                        
-                        try:
-                            result_path = autofix(
-                                image_path,
-                                output_path,
-                                border_percent=args.border,
-                                progress_callback=progress_callback
-                            )
-                            processed_files.append(result_path)
-                        except Exception as e:
-                            print(f"Error processing {image_path}: {e}")
-                        
-                        pbar.update(1)
-                
-                print(f"Processed {len(processed_files)} images to {output_dir}")
-                print_execution_time(start_time)
-            
-            else:
-                # Single image processing
-                # Create default output path if not specified
-                if args.output is None:
-                    image_dir = os.path.dirname(args.image_path)
-                    image_basename = os.path.splitext(os.path.basename(args.image_path))[0]
-                    image_ext = os.path.splitext(args.image_path)[1]
-                    output_path = os.path.join(image_dir, f"autofix_{image_basename}{image_ext}")
-                else:
-                    output_path = args.output
-                
-                # Create output directory if it doesn't exist
-                output_dir = os.path.dirname(output_path)
-                if output_dir:
-                    os.makedirs(output_dir, exist_ok=True)
-                
-                # Autofix the image with progress indication
-                with tqdm(total=100, desc="Auto-fixing") as pbar:
-                    last_progress = 0
-                    
-                    def progress_callback(percent):
-                        nonlocal last_progress
-                        increment = percent - last_progress
-                        if increment > 0:
-                            pbar.update(increment)
-                            last_progress = percent
-                    
-                    output_path = autofix(
+                    result = crop_with_content_detection(
                         args.image_path,
-                        output_path,
+                        args.output,
+                        mode=args.mode,
                         border_percent=args.border,
-                        progress_callback=progress_callback
+                        margin=args.margin
                     )
-                
-                print(f"Auto-fixed image saved to {output_path}")
+                print(f"Processed image saved to: {result}")
                 print_execution_time(start_time)
+            except Exception as e:
+                print(f"Error: {str(e)}")
+                return 1
         
         elif args.command == "filter":
             if not args.filters and not args.preset:
@@ -474,6 +415,26 @@ def filter_cmd(input_path, filters, preset, output, save_preset):
         print(f"\nError: {str(e)}")
         print_execution_time(start_time)
         raise
+
+@click.command()
+@click.argument('input_path', type=click.Path(exists=True))
+@click.option('-o', '--output', help='Output path')
+@click.option('-m', '--mode', 
+              type=click.Choice(['auto', 'frame', 'border']), 
+              default='auto',
+              help='Cropping mode')
+@click.option('-t', '--threshold',
+              type=int,
+              default=30,
+              help='Brightness threshold for content detection')
+def crop_cmd(input_path, output, mode, threshold):
+    """Crop image content"""
+    try:
+        result = crop_with_content_detection(input_path, output, mode, threshold)
+        print(f"Cropped image saved to: {result}")
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return 1
 
 if __name__ == "__main__":
     sys.exit(main())
