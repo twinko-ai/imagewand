@@ -1,8 +1,9 @@
+import math
+import os
+
 import cv2
 import numpy as np
 from PIL import Image
-import os
-import math
 
 
 def autofix(input_path, output_path=None, border_percent=-1, progress_callback=None):

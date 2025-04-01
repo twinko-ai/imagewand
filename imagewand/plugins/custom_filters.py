@@ -1,5 +1,6 @@
-from imagewand import add_custom_filter, apply_filter
 from PIL import Image, ImageOps
+
+from imagewand import add_custom_filter, apply_filter
 
 
 def my_custom_filter(img, params=None):

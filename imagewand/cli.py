@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 import argparse
-import sys
-import os
-from tqdm import tqdm
-from .pdf2img import pdf_to_images
-from .resize import resize_image
-from .autofix import autofix, crop_with_content_detection, crop_framed_photo
 import glob
-from .filters import apply_filter, apply_filters, batch_apply_filters, list_filters
-import cv2
-from .config import load_presets, save_preset, list_presets
-import click
+import os
+import sys
 import time
 from datetime import datetime
+
+import click
+import cv2
+from tqdm import tqdm
+
+from .autofix import autofix, crop_framed_photo, crop_with_content_detection
+from .config import list_presets, load_presets, save_preset
+from .filters import apply_filter, apply_filters, batch_apply_filters, list_filters
+from .pdf2img import pdf_to_images
+from .resize import resize_image
 
 
 def print_execution_time(start_time):

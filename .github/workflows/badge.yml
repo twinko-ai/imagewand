@@ -3,8 +3,8 @@ name: Update Badges
 on:
   push:
     branches: [ main ]
-  schedule:
-    - cron: '0 0 * * *'  # Daily at midnight UTC
+  pull_request:
+    branches: [ main ]
 
 jobs:
   update-badges:
@@ -12,12 +12,30 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Update coverage badge
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov
+        pip install -e .
+    
+    - name: Run tests with coverage
+      run: |
+        pytest --cov=imagewand tests/ --cov-report=xml
+        echo "COVERAGE=$(python -c 'import xml.etree.ElementTree as ET; tree = ET.parse("coverage.xml"); root = tree.getroot(); print(root.attrib["line-rate"])')" >> $GITHUB_ENV
+        python -c "coverage = float('${COVERAGE}') * 100; print(f'COVERAGE_COLOR={"brightgreen" if coverage >= 90 else "green" if coverage >= 80 else "yellow" if coverage >= 70 else "orange" if coverage >= 60 else "red"}' if coverage > 0 else 'lightgrey')" >> $GITHUB_ENV
+    
+    - name: Create Coverage Badge
       uses: schneegans/dynamic-badges-action@v1.6.0
       with:
-        auth: ${{ secrets.GIST_SECRET }}
-        gistID: YOUR_GIST_ID
+        auth: ${{ secrets.GIST_TOKEN }}
+        gistID: YOUR_GIST_ID_HERE # Replace with your Gist ID
         filename: coverage.json
         label: coverage
-        message: ${{ env.COVERAGE }}
-        color: ${{ env.COVERAGE_COLOR }} 
+        message: ${{ env.COVERAGE }}%
+        color: ${{ env.COVERAGE_COLOR }}
+        namedLogo: python 

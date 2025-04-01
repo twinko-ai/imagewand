@@ -1,7 +1,8 @@
 import os
-import pytest
-import numpy as np
+
 import cv2
+import numpy as np
+import pytest
 
 from imagewand.autofix import autofix, crop_framed_photo
 

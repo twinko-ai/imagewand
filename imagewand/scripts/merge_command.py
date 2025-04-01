@@ -1,8 +1,10 @@
+from pathlib import Path
+from typing import List
+
 import click
 import cv2
-from pathlib import Path
 from tqdm import tqdm
-from typing import List
+
 from ..automerge import AutoMerge
 
 

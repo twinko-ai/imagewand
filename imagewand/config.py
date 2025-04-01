@@ -1,6 +1,6 @@
+import configparser
 import os
 from pathlib import Path
-import configparser
 
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.imagewand_presets")
 

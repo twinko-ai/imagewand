@@ -1,4 +1,5 @@
 import os
+
 from PIL import Image
 
 MIN_WIDTH = 1500

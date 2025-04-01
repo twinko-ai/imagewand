@@ -1,7 +1,8 @@
+import logging
+from typing import List, Optional, Tuple
+
 import cv2
 import numpy as np
-from typing import List, Tuple, Optional
-import logging
 from tqdm import tqdm
 
 

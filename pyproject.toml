@@ -1,8 +1,8 @@
 [project]
 name = "imagewand"
 version = "0.1.0"
-description = "A Python package for image resizing and PDF to image conversion"
-authors = [{ name = "Tengfei Yin", email = "tengfei@twinko.ai" }]
+description = "A powerful command-line tool for image manipulation"
+authors = [{ name = "twinko-ai", email = "tengfei@twinko.ai" }]
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.8"
