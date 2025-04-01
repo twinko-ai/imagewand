@@ -24,8 +24,9 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y poppler-utils  # Required for pdf2image
-        sudo apt-get install -y libgl1-mesa-glx  # Required for opencv-python
+        sudo apt-get install -y poppler-utils
+        sudo apt-get install -y libgl1  # Changed from libgl1-mesa-glx to libgl1
+        sudo apt-get install -y libglib2.0-0
     
     - name: Install dependencies
       run: |
