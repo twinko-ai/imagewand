@@ -52,18 +52,41 @@ imagewand resize input.jpg -o resized.jpg -w 800
 
 ### Auto-fix Scanned Images
 
-Automatically straighten and crop scanned images:
+Automatically crop and clean up scanned images with two specialized modes:
 
 ```bash
-# Basic usage
+# Frame mode - Extract photo from contrasting frame/background
+imagewand autofix scan.jpg -m frame
+imagewand autofix scan.jpg -m frame --margin -2  # More aggressive crop
+imagewand autofix scan.jpg -m frame --margin 5   # Add margin
+
+# Border mode - Remove white margins only
+imagewand autofix scan.jpg -m border
+imagewand autofix scan.jpg -m border -b -2  # More aggressive crop
+imagewand autofix scan.jpg -m border -b 5   # Keep more border
+
+# Auto mode (default) - Tries frame detection first, falls back to border removal
 imagewand autofix scan.jpg
 
 # Process entire directory
 imagewand autofix scans_folder/
-
-# Adjust border percentage
-imagewand autofix scan.jpg -b 10
 ```
+
+Cropping modes explained:
+- `frame`: Best for photos on contrasting backgrounds (e.g., artwork on black paper)
+  - Use `--margin` to adjust cropping (negative for tighter crop, positive for more margin)
+  - Default margin is -1 for slightly aggressive crop
+  
+- `border`: Best for documents with white margins
+  - Use `-b` to adjust border percentage (negative for tighter crop, positive to keep more border)
+  - Default border is 0 for exact content boundaries
+  
+- `auto`: Attempts frame detection first, falls back to border removal if no frame is detected
+
+Output filenames reflect the mode and parameters used:
+- Frame mode: `photo_frame.jpg` or `photo_frame_m2.jpg` (with margin 2)
+- Border mode: `photo_border.jpg` or `photo_border_b5.jpg` (with 5% border)
+- Auto mode: `photo_auto_frame.jpg` or `photo_auto_border.jpg`
 
 ### Apply Filters
 
@@ -242,11 +265,16 @@ Let me know if you'd like me to add more filter combinations or specific example
 ## Tips
 
 1. Use `--debug` flag with any command for detailed output
-2. For merging scans:
+2. For autofix:
+   - Use `frame` mode for artwork on contrasting backgrounds
+   - Use `border` mode for documents with white margins
+   - Try negative margins/borders for more aggressive cropping
+   - Use positive margins/borders to keep more content
+3. For merging scans:
    - Remove white borders automatically
    - Images should have overlapping regions
    - Order matters when specifying individual files
-3. For PDF conversion:
+4. For PDF conversion:
    - Higher DPI values give better quality but larger files
    - PNG format is better for text documents
    - JPG is better for photos
