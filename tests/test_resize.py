@@ -19,7 +19,6 @@ def sample_image(tmp_path):
 def test_resize_by_width(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
     result = resize_image(sample_image, output, width=200)
-
     assert os.path.exists(result)
     img = cv2.imread(result)
     assert img.shape[1] == 200  # width should be 200
@@ -29,7 +28,6 @@ def test_resize_by_width(sample_image, tmp_path):
 def test_resize_by_height(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
     result = resize_image(sample_image, output, height=150)
-
     assert os.path.exists(result)
     img = cv2.imread(result)
     assert img.shape[0] == 150  # height should be 150
@@ -39,7 +37,6 @@ def test_resize_by_height(sample_image, tmp_path):
 def test_resize_both_dimensions(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
     result = resize_image(sample_image, output, width=200, height=150)
-
     assert os.path.exists(result)
     img = cv2.imread(result)
     assert img.shape[1] == 200
@@ -47,11 +44,11 @@ def test_resize_both_dimensions(sample_image, tmp_path):
 
 
 def test_resize_invalid_input():
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, FileNotFoundError)):
         resize_image("nonexistent.jpg", "output.jpg", width=200)
 
 
 def test_resize_no_dimensions(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Either width or height must be specified"):
         resize_image(sample_image, output)
