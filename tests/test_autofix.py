@@ -16,7 +16,7 @@ def sample_image(tmp_path):
     img[-50:, :] = 255  # White border bottom
     img[:, :50] = 255  # White border left
     img[:, -50:] = 255  # White border right
-    
+
     path = tmp_path / "test.jpg"
     cv2.imwrite(str(path), img)
     return str(path)

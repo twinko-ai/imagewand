@@ -3,7 +3,7 @@ from typing import Callable, Dict, List, Tuple, Union
 
 import cv2
 import numpy as np
-from PIL import Image, ImageChops, ImageEnhance, ImageFilter, ImageOps
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from tqdm import tqdm
 
 # Define filter type
@@ -464,7 +464,9 @@ def create_filter_suffix(filter_string: str) -> str:
     return name
 
 
-def apply_filter(image_path: str, filters: Union[str, List[str]], output_path: str = None) -> str:
+def apply_filter(
+    image_path: str, filters: Union[str, List[str]], output_path: str = None
+) -> str:
     """Apply one or more filters to an image.
 
     Args:
@@ -481,8 +483,9 @@ def apply_filter(image_path: str, filters: Union[str, List[str]], output_path: s
 
     for filter_name in filters:
         if filter_name not in FILTERS:
+            available_filters = list(FILTERS.keys())
             raise ValueError(
-                f"Filter '{filter_name}' not found. Available filters: {list(FILTERS.keys())}"
+                f"Filter '{filter_name}' not found. Available filters: {available_filters}"
             )
 
         filter_func = FILTERS[filter_name]

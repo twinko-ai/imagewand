@@ -58,7 +58,9 @@ def test_batch_processing(tmp_path):
     output_dir.mkdir()
 
     results = batch_apply_filters(
-        image_paths, ["contrast", "sharpen"], str(output_dir)
+        image_paths,
+        ["contrast", "sharpen"],
+        str(output_dir),
     )
     assert len(results) == len(image_paths)
     for path in results:
