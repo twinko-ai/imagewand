@@ -26,6 +26,9 @@ def my_custom_filter(img: np.ndarray, params: dict = None) -> np.ndarray:
     return enhanced
 
 
+# Export the filter function
+my_noir_look = my_custom_filter
+
 # Register the custom filter
 add_custom_filter("my_noir_look", my_custom_filter)
 

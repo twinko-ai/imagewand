@@ -1,4 +1,3 @@
-import click
 from click.testing import CliRunner
 
 from imagewand.cli import cli

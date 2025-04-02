@@ -6,7 +6,7 @@ Users can create their own custom filters by following these examples.
 """
 
 # Import any filters you want to expose directly
-from .custom_filters import my_noir_look
+from .custom_filters import my_noir_look, my_custom_filter
 
 # List of filters that will be automatically registered
-__all__ = ["my_noir_look"]
+__all__ = ["my_noir_look", "my_custom_filter"]

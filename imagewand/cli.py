@@ -32,6 +32,43 @@ def print_execution_time(start_time):
     print(f"Total execution time: {time_str}")
 
 
+@click.group()
+def cli():
+    """ImageWand - Image processing utilities"""
+    pass
+
+
+@cli.command()
+def version():
+    """Show version information"""
+    click.echo("ImageWand version 0.1.0")
+
+
+@cli.command()
+@click.argument('input_path')
+@click.option('-o', '--output', help='Output path')
+@click.option('-m', '--mode', default='auto', help='Cropping mode: auto, frame, or border')
+@click.option('-b', '--border', default=0, help='Border percentage for border mode')
+@click.option('--margin', default=-1, help='Margin in pixels for frame mode')
+def autofix(input_path, output, mode, border, margin):
+    """Auto-fix scanned images"""
+    from .autofix import autofix as fix_image
+    result = fix_image(input_path, output, mode=mode, border_percent=border, margin=margin)
+    click.echo(f"Processed image saved to: {result}")
+
+
+@cli.command()
+@click.argument('input_path')
+@click.option('-f', '--filters', help='Comma-separated list of filters to apply')
+@click.option('-o', '--output', help='Output path')
+def filter(input_path, filters, output):
+    """Apply filters to images"""
+    from .filters import apply_filters
+    filters_list = filters.split(',') if filters else []
+    result = apply_filters([input_path], filters_list, output)
+    click.echo(f"Filtered image saved to: {result}")
+
+
 def main():
     start_time = time.time()
     parser = argparse.ArgumentParser(description="ImageWand - Image manipulation tools")
@@ -536,4 +573,4 @@ def crop_cmd(input_path, output, mode, threshold):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    cli()
