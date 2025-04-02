@@ -45,26 +45,32 @@ def version():
 
 
 @cli.command()
-@click.argument('input_path')
-@click.option('-o', '--output', help='Output path')
-@click.option('-m', '--mode', default='auto', help='Cropping mode: auto, frame, or border')
-@click.option('-b', '--border', default=0, help='Border percentage for border mode')
-@click.option('--margin', default=-1, help='Margin in pixels for frame mode')
+@click.argument("input_path")
+@click.option("-o", "--output", help="Output path")
+@click.option(
+    "-m", "--mode", default="auto", help="Cropping mode: auto, frame, or border"
+)
+@click.option("-b", "--border", default=0, help="Border percentage for border mode")
+@click.option("--margin", default=-1, help="Margin in pixels for frame mode")
 def autofix(input_path, output, mode, border, margin):
     """Auto-fix scanned images"""
     from .autofix import autofix as fix_image
-    result = fix_image(input_path, output, mode=mode, border_percent=border, margin=margin)
+
+    result = fix_image(
+        input_path, output, mode=mode, border_percent=border, margin=margin
+    )
     click.echo(f"Processed image saved to: {result}")
 
 
 @cli.command()
-@click.argument('input_path')
-@click.option('-f', '--filters', help='Comma-separated list of filters to apply')
-@click.option('-o', '--output', help='Output path')
+@click.argument("input_path")
+@click.option("-f", "--filters", help="Comma-separated list of filters to apply")
+@click.option("-o", "--output", help="Output path")
 def filter(input_path, filters, output):
     """Apply filters to images"""
     from .filters import apply_filters
-    filters_list = filters.split(',') if filters else []
+
+    filters_list = filters.split(",") if filters else []
     result = apply_filters([input_path], filters_list, output)
     click.echo(f"Filtered image saved to: {result}")
 
