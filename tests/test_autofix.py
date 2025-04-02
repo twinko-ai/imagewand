@@ -35,3 +35,27 @@ def test_crop_framed_photo(tmp_path, sample_image):
     result_img = cv2.imread(result)
     assert result_img.shape[0] < sample_image.shape[0]  # Should be smaller
     assert result_img.shape[1] < sample_image.shape[1]
+
+
+def test_autofix_border_mode(tmp_path, sample_image):
+    input_path = str(tmp_path / "test.jpg")
+    cv2.imwrite(input_path, sample_image)
+    
+    result = autofix(input_path, mode="border")
+    
+    assert os.path.exists(result)
+    result_img = cv2.imread(result)
+    assert result_img.shape[0] < sample_image.shape[0]  # Should be smaller
+    assert result_img.shape[1] < sample_image.shape[1]
+
+
+def test_autofix_frame_mode(tmp_path, sample_image):
+    input_path = str(tmp_path / "test.jpg")
+    cv2.imwrite(input_path, sample_image)
+    
+    result = autofix(input_path, mode="frame")
+    
+    assert os.path.exists(result)
+    result_img = cv2.imread(result)
+    assert result_img.shape[0] < sample_image.shape[0]  # Should be smaller
+    assert result_img.shape[1] < sample_image.shape[1]

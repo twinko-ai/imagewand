@@ -1,17 +1,16 @@
 from click.testing import CliRunner
-
-from imagewand.cli import main
+from imagewand.cli import cli
 
 
 def test_cli_help():
     runner = CliRunner()
-    result = runner.invoke(main, ["--help"])
+    result = runner.invoke(cli, ['--help'])
     assert result.exit_code == 0
-    assert "Usage:" in result.output
+    assert 'Usage:' in result.output
 
 
 def test_cli_version():
     runner = CliRunner()
-    result = runner.invoke(main, ["--version"])
+    result = runner.invoke(cli, ['--version'])
     assert result.exit_code == 0
-    assert "version" in result.output.lower()
+    assert 'version' in result.output.lower()

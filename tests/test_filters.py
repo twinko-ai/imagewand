@@ -19,11 +19,11 @@ def test_contrast_filter(tmp_path, sample_image):
     cv2.imwrite(input_path, sample_image)
 
     output_path = str(tmp_path / "output.jpg")
-    result = apply_filter(input_path, "contrast", output_path)
+    result = apply_filter(input_path, ["contrast"], output_path)
 
     assert os.path.exists(result)
     result_img = cv2.imread(result)
-    assert not np.array_equal(result_img, sample_image)
+    assert not np.all(result_img == sample_image)
 
 
 def test_multiple_filters(tmp_path, sample_image):
@@ -31,6 +31,8 @@ def test_multiple_filters(tmp_path, sample_image):
     cv2.imwrite(input_path, sample_image)
 
     output_path = str(tmp_path / "output.jpg")
-    result = apply_filter(input_path, "contrast,sharpen", output_path)
+    result = apply_filter(input_path, ["contrast", "sharpen"], output_path)
 
     assert os.path.exists(result)
+    result_img = cv2.imread(result)
+    assert not np.all(result_img == sample_image)

@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/imagewand.svg)](https://badge.fury.io/py/imagewand)
 [![Python Versions](https://img.shields.io/pypi/pyversions/imagewand.svg)](https://pypi.org/project/imagewand)
 [![Build Status](https://github.com/twinko-ai/imagewand/actions/workflows/ci.yml/badge.svg)](https://github.com/twinko-ai/imagewand/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-black.svg)](https://github.com/psf/black)
 [![GitHub last commit](https://img.shields.io/github/last-commit/twinko-ai/imagewand.svg)](https://github.com/twinko-ai/imagewand/commits)
 [![GitHub repo size](https://img.shields.io/github/repo-size/twinko-ai/imagewand.svg)](https://github.com/twinko-ai/imagewand)

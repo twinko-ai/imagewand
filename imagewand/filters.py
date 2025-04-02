@@ -464,60 +464,34 @@ def create_filter_suffix(filter_string: str) -> str:
     return name
 
 
-def apply_filter(
-    image_path: str,
-    filter_name: str,
-    output_path: str = None,
-    params: Dict = None,
-    progress_callback: Callable = None,
-) -> str:
-    """
-    Apply a single filter to an image
-
+def apply_filter(image_path: str, filters: Union[str, List[str]], output_path: str = None) -> str:
+    """Apply one or more filters to an image.
+    
     Args:
-        image_path: Path to the input image
-        filter_name: Name of the filter to apply
-        output_path: Path to save the filtered image (if None, will use default naming)
-        params: Parameters for the filter
-        progress_callback: Optional callback function for progress updates
-
-    Returns:
-        Path to the filtered image
+        image_path: Path to input image
+        filters: Filter name or list of filter names
+        output_path: Path to save filtered image
     """
-    if progress_callback:
-        progress_callback(10)  # 10% - Starting
-
-    # Check if filter exists
-    if filter_name not in FILTERS:
-        raise ValueError(
-            f"Filter '{filter_name}' not found. Available filters: {list(FILTERS.keys())}"
-        )
-
-    # Create default output path if not provided
+    if isinstance(filters, str):
+        filters = [filters]
+    
+    img = cv2.imread(image_path)
+    if img is None:
+        raise ValueError(f"Could not load image: {image_path}")
+    
+    for filter_name in filters:
+        if filter_name not in FILTERS:
+            raise ValueError(f"Filter '{filter_name}' not found. Available filters: {list(FILTERS.keys())}")
+        
+        filter_func = FILTERS[filter_name]
+        img = filter_func(img)
+    
     if output_path is None:
-        file_dir = os.path.dirname(image_path)
-        file_name, file_ext = os.path.splitext(os.path.basename(image_path))
-        output_path = os.path.join(file_dir, f"{file_name}_{filter_name}{file_ext}")
-
-    # Open the image
-    img = Image.open(image_path)
-
-    if progress_callback:
-        progress_callback(30)  # 30% - Image loaded
-
-    # Apply the filter
-    filter_func = FILTERS[filter_name]
-    filtered_img = filter_func(img, params)
-
-    if progress_callback:
-        progress_callback(70)  # 70% - Filter applied
-
-    # Save the filtered image
-    filtered_img.save(output_path)
-
-    if progress_callback:
-        progress_callback(100)  # 100% - Image saved
-
+        base, ext = os.path.splitext(image_path)
+        filter_str = '_'.join(filters)
+        output_path = f"{base}_{filter_str}{ext}"
+    
+    cv2.imwrite(output_path, img)
     return output_path
 
 
