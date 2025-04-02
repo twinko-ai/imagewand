@@ -28,4 +28,4 @@ def test_custom_filter_invalid_params(sample_image):
     params = {"invalid_param": 1.0}
     result = my_custom_filter(sample_image, params)
     assert isinstance(result, np.ndarray)
-    assert result.shape == sample_image.shape 
+    assert result.shape == sample_image.shape
