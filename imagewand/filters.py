@@ -550,42 +550,34 @@ def apply_filters(
 
 def batch_apply_filters(
     image_paths: List[str],
-    filter_names: List[str],
+    filters: List[str],
     output_dir: str,
-    params: List[dict] = None,
-    progress_callback=None,
 ) -> List[str]:
-    """Apply filters to multiple images"""
-    output_paths = []
+    """Apply filters to multiple images.
 
-    # Create progress bar for all images
-    with tqdm(total=len(image_paths), desc="Processing images") as pbar:
-        for i, image_path in enumerate(image_paths):
-            # Show current image being processed
-            pbar.set_description(f"Processing {os.path.basename(image_path)}")
+    Args:
+        image_paths: List of input image paths
+        filters: List of filters to apply
+        output_dir: Output directory
 
-            # Create output path
-            output_name = (
-                f"{os.path.splitext(os.path.basename(image_path))[0]}_filtered.jpg"
-            )
-            output_path = os.path.join(output_dir, output_name)
+    Returns:
+        List of output image paths
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    results = []
 
-            try:
-                # Apply filters with nested progress
-                result_path = apply_filters(
-                    image_path,
-                    filter_names,
-                    output_path,
-                    params,
-                    lambda p: progress_callback(((i * 100) + p) / len(image_paths)),
-                )
-                output_paths.append(result_path)
-            except Exception as e:
-                print(f"Error processing {image_path}: {str(e)}")
+    for image_path in tqdm(image_paths, desc="Processing images"):
+        try:
+            base_name = os.path.basename(image_path)
+            output_path = os.path.join(output_dir, base_name)
+            result = apply_filters(image_path, filters, output_path)
+            if result:
+                results.append(result)
+        except Exception as e:
+            print(f"Error processing {image_path}: {str(e)}")
+            continue
 
-            pbar.update(1)
-
-    return output_paths
+    return results
 
 
 def list_filters() -> List[str]:

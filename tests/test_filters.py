@@ -24,7 +24,9 @@ def sample_image(tmp_path):
 
 def test_single_filter(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
-    result = apply_filters(sample_image, ["contrast"], output)
+    result = apply_filters(
+        image_path=sample_image, filter_names=["contrast"], output_path=output
+    )
     assert os.path.exists(result)
 
 

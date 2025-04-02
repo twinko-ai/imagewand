@@ -6,82 +6,53 @@ import numpy as np
 from PIL import Image
 
 
-def autofix(input_path, output_path=None, border_percent=-1, progress_callback=None):
-    """
-    Remove white margins only, keeping the actual content and frame intact.
+def autofix(
+    input_path: str,
+    output_path: str = None,
+    mode: str = "auto",
+    margin: int = -1,
+    border_percent: int = -1,
+) -> str:
+    """Auto-fix scanned images.
 
     Args:
-        input_path (str): Path to the input image
-        output_path (str): Path to save the processed image
-        border_percent: Percentage of border (-5 to crop more aggressively,
-                       positive to keep more border, default: -1)
-        progress_callback (callable): Optional callback function for progress updates
+        input_path: Path to input image
+        output_path: Path to output image (optional)
+        mode: Cropping mode - "auto", "frame", or "border"
+        margin: Margin in pixels for frame mode
+        border_percent: Border percentage for border mode
+
+    Returns:
+        Path to output image
     """
-    img = cv2.imread(input_path)
-    if img is None:
-        raise ValueError(f"Could not load image: {input_path}")
-
-    # Convert to grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # Even more aggressive threshold for white margins
-    _, binary = cv2.threshold(gray, 240, 255, cv2.THRESH_BINARY_INV)  # Lowered to 240
-
-    # More aggressive noise cleanup
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))  # Increased kernel size
-    binary = cv2.morphologyEx(
-        binary, cv2.MORPH_DILATE, kernel
-    )  # Dilate to connect content
-    binary = cv2.morphologyEx(binary, cv2.MORPH_ERODE, kernel)  # Erode to remove noise
-
-    # Find contours of non-white regions
-    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    if not contours:
-        print("No content detected in the image.")
-        if output_path is None:
-            output_path = input_path.replace(".", "_fixed.")
-        cv2.imwrite(output_path, img)
-        return output_path
-
-    # Find exact bounding box of all content
-    x_min, y_min = img.shape[1], img.shape[0]
-    x_max, y_max = 0, 0
-
-    for contour in contours:
-        x, y, w, h = cv2.boundingRect(contour)
-        x_min = min(x_min, x)
-        y_min = min(y_min, y)
-        x_max = max(x_max, x + w)
-        y_max = max(y_max, y + h)
-
-    # Apply border percentage (now handles negative values)
-    border_x = int((x_max - x_min) * abs(border_percent) / 100)
-    border_y = int((y_max - y_min) * abs(border_percent) / 100)
-
-    if border_percent >= 0:
-        # Add border
-        x_min = max(0, x_min - border_x)
-        y_min = max(0, y_min - border_y)
-        x_max = min(img.shape[1], x_max + border_x)
-        y_max = min(img.shape[0], y_max + border_y)
-    else:
-        # Crop more aggressively
-        x_min = min(x_min + border_x, x_max)
-        y_min = min(y_min + border_y, y_max)
-        x_max = max(x_max - border_x, x_min)
-        y_max = max(y_max - border_y, y_min)
-
-    # Crop exactly at the bounds
-    cropped = img[y_min:y_max, x_min:x_max]
+    if mode not in ["auto", "frame", "border"]:
+        raise ValueError(f"Invalid mode: {mode}")
 
     if output_path is None:
         base, ext = os.path.splitext(input_path)
-        suffix = f"_border_b{border_percent}" if border_percent > 0 else "_border"
+        if mode == "frame":
+            suffix = f"_frame_m{margin}" if margin != -1 else "_frame"
+        elif mode == "border":
+            suffix = f"_border_b{border_percent}" if border_percent != -1 else "_border"
+        else:
+            suffix = "_auto"
         output_path = f"{base}{suffix}{ext}"
 
-    cv2.imwrite(output_path, cropped)
-    return output_path
+    img = cv2.imread(input_path)
+    if img is None:
+        raise ValueError(f"Failed to load image: {input_path}")
+
+    if mode == "frame":
+        result = crop_framed_photo(input_path, margin=margin)
+    elif mode == "border":
+        result = crop_with_content_detection(input_path, border_percent=border_percent)
+    else:
+        result = crop_with_content_detection(input_path)
+
+    if result is None:
+        raise ValueError("Failed to process image")
+
+    return result
 
 
 def crop_dark_background(

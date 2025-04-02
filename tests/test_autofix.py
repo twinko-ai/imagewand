@@ -10,7 +10,9 @@ from imagewand.autofix import autofix, crop_framed_photo
 @pytest.fixture
 def sample_image(tmp_path):
     """Create a sample image for testing"""
-    img = np.ones((300, 400, 3), dtype=np.uint8) * 128
+    # Create an image with a clear frame
+    img = np.zeros((300, 400, 3), dtype=np.uint8)
+    img[50:-50, 50:-50] = 255  # White content with black frame
     path = str(tmp_path / "test.jpg")
     cv2.imwrite(str(path), img)
     return str(path)
@@ -28,28 +30,32 @@ def test_crop_framed_photo(tmp_path, sample_image):
 
 def test_autofix_border_mode(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
-    result = autofix(sample_image, output_path=output, mode="border")
+    result = autofix(input_path=sample_image, output_path=output, mode="border")
     assert os.path.exists(result)
 
 
 def test_autofix_frame_mode(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
-    result = autofix(sample_image, output_path=output, mode="frame")
+    result = autofix(input_path=sample_image, output_path=output, mode="frame")
     assert os.path.exists(result)
 
 
 def test_autofix_with_margin(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
-    result = autofix(sample_image, output_path=output, mode="frame", margin=10)
+    result = autofix(
+        input_path=sample_image, output_path=output, mode="frame", margin=10
+    )
     assert os.path.exists(result)
 
 
 def test_autofix_with_border(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
-    result = autofix(sample_image, output_path=output, mode="border", border_percent=5)
+    result = autofix(
+        input_path=sample_image, output_path=output, mode="border", border_percent=5
+    )
     assert os.path.exists(result)
 
 
 def test_autofix_invalid_mode(sample_image):
     with pytest.raises(ValueError):
-        autofix(sample_image, mode="invalid")
+        autofix(input_path=sample_image, mode="invalid")

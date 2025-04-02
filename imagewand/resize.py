@@ -9,57 +9,33 @@ MAX_SIZE_BYTES = MAX_SIZE_KB * 1024
 
 
 def resize_image(
-    input_path, output_path, width=None, height=None, progress_callback=None
-):
-    """
-    Resize an image while maintaining aspect ratio.
+    input_path: str, output_path: str, width: int = None, height: int = None
+) -> str:
+    """Resize an image while maintaining aspect ratio.
 
     Args:
-        input_path (str): Path to the input image
-        output_path (str): Path to save the resized image
-        width (int): Target width (if None, will be calculated from height)
-        height (int): Target height (if None, will be calculated from width)
-        progress_callback (callable): Optional callback function for progress updates
+        input_path: Path to input image
+        output_path: Path to output image
+        width: Target width in pixels
+        height: Target height in pixels
 
     Returns:
-        str: Path to the resized image
+        Path to output image
     """
-    # Open the image
-    if progress_callback:
-        progress_callback(10)  # 10% - Image opened
+    if width is None and height is None:
+        raise ValueError("Either width or height must be specified")
 
     img = Image.open(input_path)
-
-    # Get original dimensions
-    orig_width, orig_height = img.size
-
-    # Calculate new dimensions
     if width and height:
-        new_width, new_height = width, height
+        img = img.resize((width, height))
     elif width:
-        ratio = width / orig_width
-        new_width = width
-        new_height = int(orig_height * ratio)
-    elif height:
-        ratio = height / orig_height
-        new_height = height
-        new_width = int(orig_width * ratio)
+        ratio = width / img.size[0]
+        height = int(img.size[1] * ratio)
+        img = img.resize((width, height))
     else:
-        new_width, new_height = orig_width, orig_height
+        ratio = height / img.size[1]
+        width = int(img.size[0] * ratio)
+        img = img.resize((width, height))
 
-    if progress_callback:
-        progress_callback(50)  # 50% - Dimensions calculated
-
-    # Resize the image
-    resized_img = img.resize((new_width, new_height), Image.LANCZOS)
-
-    if progress_callback:
-        progress_callback(80)  # 80% - Image resized
-
-    # Save the resized image
-    resized_img.save(output_path)
-
-    if progress_callback:
-        progress_callback(100)  # 100% - Image saved
-
+    img.save(output_path)
     return output_path
