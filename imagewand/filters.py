@@ -466,7 +466,7 @@ def create_filter_suffix(filter_string: str) -> str:
 
 def apply_filter(image_path: str, filters: Union[str, List[str]], output_path: str = None) -> str:
     """Apply one or more filters to an image.
-    
+
     Args:
         image_path: Path to input image
         filters: Filter name or list of filter names
@@ -474,23 +474,25 @@ def apply_filter(image_path: str, filters: Union[str, List[str]], output_path: s
     """
     if isinstance(filters, str):
         filters = [filters]
-    
+
     img = cv2.imread(image_path)
     if img is None:
         raise ValueError(f"Could not load image: {image_path}")
-    
+
     for filter_name in filters:
         if filter_name not in FILTERS:
-            raise ValueError(f"Filter '{filter_name}' not found. Available filters: {list(FILTERS.keys())}")
-        
+            raise ValueError(
+                f"Filter '{filter_name}' not found. Available filters: {list(FILTERS.keys())}"
+            )
+
         filter_func = FILTERS[filter_name]
         img = filter_func(img)
-    
+
     if output_path is None:
         base, ext = os.path.splitext(image_path)
-        filter_str = '_'.join(filters)
+        filter_str = "_".join(filters)
         output_path = f"{base}_{filter_str}{ext}"
-    
+
     cv2.imwrite(output_path, img)
     return output_path
 
