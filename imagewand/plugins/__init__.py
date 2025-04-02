@@ -1,12 +1,11 @@
-"""
-ImageWand Plugins
+"""Custom filter plugins for ImageWand.
 
-This module contains example plugins and custom filters that can be used with ImageWand.
-Users can create their own custom filters by following these examples.
+This module provides custom filter plugins that can be used with ImageWand.
+All filters in this module will be automatically registered with the filter system.
 """
 
 # Import any filters you want to expose directly
-from .custom_filters import my_noir_look, my_custom_filter
+from .custom_filters import my_custom_filter, my_noir_look
 
 # List of filters that will be automatically registered
-__all__ = ["my_noir_look", "my_custom_filter"]
+__all__ = ["my_custom_filter", "my_noir_look"]
