@@ -5,7 +5,12 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from imagewand.filters import apply_filter, apply_filters, batch_apply_filters, list_filters
+from imagewand.filters import (
+    apply_filter,
+    apply_filters,
+    batch_apply_filters,
+    list_filters,
+)
 
 
 @pytest.fixture

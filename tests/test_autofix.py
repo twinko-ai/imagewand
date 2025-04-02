@@ -21,7 +21,6 @@ def test_crop_framed_photo(tmp_path, sample_image):
     img = cv2.imread(sample_image)
     output_path = str(tmp_path / "test_frame.jpg")
     cv2.imwrite(output_path, img)
-    
     result = crop_framed_photo(output_path)
     assert result is not None
     assert os.path.exists(result)
