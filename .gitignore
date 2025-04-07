@@ -41,13 +41,7 @@ ENV/
 
 # ImageWand specific
 ~/.imagewand_presets
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.bmp
-*.tiff
-*.pdf
+
 
 # Test
 .pytest_cache/
