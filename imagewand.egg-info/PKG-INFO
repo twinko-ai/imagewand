@@ -3,7 +3,7 @@ Name: imagewand
 Version: 0.1.0
 Summary: A Python package for image resizing and PDF to image conversion
 Author-email: Tengfei Yin <tengfei@twinko.ai>
-License: MIT
+License: Apache-2.0
 Project-URL: Homepage, https://github.com/twinko-ai/imagewand
 Project-URL: Repository, https://github.com/twinko-ai/imagewand
 Project-URL: Documentation, https://github.com/twinko-ai/imagewand#readme
@@ -18,8 +18,10 @@ Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Topic :: Multimedia :: Graphics
 Classifier: Topic :: Utilities
+Classifier: License :: OSI Approved :: Apache Software License
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: Pillow
 Requires-Dist: pdf2image
 Requires-Dist: requests>=2.31.0
@@ -29,13 +31,19 @@ Requires-Dist: opencv-python
 Requires-Dist: numpy
 Requires-Dist: click
 Requires-Dist: black>=24.8.0
+Requires-Dist: isort>=5.12.0
+Dynamic: license-file
 
 # ImageWand
 
-[![Python Versions](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue)](https://github.com/twinko-ai/imagewand)
+[![PyPI version](https://badge.fury.io/py/imagewand.svg)](https://badge.fury.io/py/imagewand)
+[![Python Versions](https://img.shields.io/pypi/pyversions/imagewand.svg)](https://pypi.org/project/imagewand)
 [![Build Status](https://github.com/twinko-ai/imagewand/actions/workflows/ci.yml/badge.svg)](https://github.com/twinko-ai/imagewand/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-black.svg)](https://github.com/psf/black)
+[![GitHub last commit](https://img.shields.io/github/last-commit/twinko-ai/imagewand.svg)](https://github.com/twinko-ai/imagewand/commits)
+[![GitHub repo size](https://img.shields.io/github/repo-size/twinko-ai/imagewand.svg)](https://github.com/twinko-ai/imagewand)
+[![Downloads](https://static.pepy.tech/badge/imagewand)](https://pepy.tech/project/imagewand)
 
 A powerful command-line tool for image manipulation, including PDF to image conversion, image resizing, auto-fixing scanned images, applying filters, and merging scanned images.
 
@@ -161,171 +169,4 @@ imagewand filter drawing.jpg -f "saturation:factor=1.3,contrast,sharpen:factor=2
 Common filter parameters:
 - `contrast:factor=1.2` - Lighter contrast (default: 1.5)
 - `sharpen:factor=1.8` - Stronger sharpening (default: 2.0)
-- `blur:radius=3` - Control blur strength (default: 2)
-- `brightness:factor=1.2` - Adjust brightness (default: 1.5)
-- `saturation:factor=1.3` - Control color saturation (default: 1.5)
-
-The output filename will include the parameters used:
-
-### Filter Presets
-
-Save and reuse your favorite filter combinations as presets:
-
-```bash
-# Save a filter combination as a preset
-imagewand filter drawing.jpg -f "saturation:factor=1.2,contrast:factor=1.2,sharpen:factor=1.2" --save-preset kids_drawing
-
-# Apply the saved preset to an image
-imagewand filter drawing.jpg -p kids_drawing
-
-# Apply preset with custom output path
-imagewand filter drawing.jpg -p kids_drawing -o enhanced.jpg
-
-# List all available presets
-imagewand list-presets
-```
-
-The presets are stored in `~/.imagewand_presets` file in INI format:
-```ini
-[presets]
-kids_drawing = saturation:factor=1.2,contrast:factor=1.2,sharpen:factor=1.2
-light_pencil = contrast:factor=1.8,contrast:factor=1.5,sharpen:factor=2.0
-colorful = saturation:factor=1.5,contrast:factor=1.3,brightness:factor=1.1
-```
-
-Common preset examples:
-```bash
-# For kids' pencil drawings
-imagewand filter drawing.jpg -f "contrast:factor=1.2,sharpen:factor=1.8" --save-preset pencil_drawing
-
-# For colorful artwork
-imagewand filter painting.jpg -f "saturation:factor=1.3,contrast:factor=1.2" --save-preset vibrant_art
-
-# For old photos
-imagewand filter photo.jpg -f "contrast:factor=1.4,brightness:factor=1.1,sharpen:factor=1.5" --save-preset photo_enhance
-```
-
-You can also edit the `~/.imagewand_presets` file directly to add or modify presets. The output filename will include the preset name:
-
-## Common Use Cases
-
-### Converting Multi-page Documents
-
-Convert a multi-page PDF to high-resolution images:
-```bash
-imagewand pdf2img document.pdf -d 300 -f png -o document_pages/
-```
-
-### Processing Scanned Documents
-
-Auto-fix and merge multiple scanned pages:
-```bash
-# First, auto-fix all scans
-imagewand autofix scans/ -o fixed_scans/
-
-# Then merge the fixed scans
-imagewand merge fixed_scans/ -o final_document.jpg
-```
-
-### Batch Processing
-
-Process multiple images in a directory:
-```bash
-# Resize all images in a directory
-imagewand resize images/ -w 1024
-
-# Apply filters to all images recursively
-imagewand filter images/ -f "sharpen,contrast" -r
-```
-
-
-## Special Use Cases
-
-### Enhancing Kids' Drawings
-
-To make scanned pencil drawings look better, you can try these filter combinations:
-
-```bash
-# Basic enhancement for light pencil drawings
-imagewand filter drawing.jpg -f "contrast,sharpen"
-
-# For very light drawings, use this sequence
-imagewand filter drawing.jpg -f "contrast,contrast,sharpen"
-
-# To make colors pop (for colored pencils)
-imagewand filter drawing.jpg -f "saturation,contrast,sharpen"
-
-# To clean up the background and enhance lines
-imagewand filter drawing.jpg -f "threshold,sharpen"
-
-# For preserving light details while enhancing contrast
-imagewand filter drawing.jpg -f "adaptive_contrast,sharpen"
-```
-
-Tips for scanning kids' drawings:
-1. Scan in color mode even for pencil drawings
-2. Use at least 300 DPI for better detail
-3. Make sure the paper is flat on the scanner
-4. Clean the scanner glass for best results
-
-Common filter combinations explained:
-- `contrast,sharpen`: Best for regular pencil drawings
-- `saturation,contrast`: Great for colored pencil art
-- `threshold`: Good for line drawings and sketches
-- `adaptive_contrast`: Best for drawings with varying pressure
-- `denoise,sharpen`: Helpful for rough paper texture
-
-Example workflow:
-```bash
-# First, auto-fix the scanned drawing to straighten and crop
-imagewand autofix drawing.jpg -o fixed.jpg
-
-# Then apply enhancement filters
-imagewand filter fixed.jpg -f "contrast,sharpen" -o enhanced.jpg
-```
-
-For batch processing multiple drawings:
-```bash
-# Enhance all drawings in a folder
-imagewand filter drawings_folder/ -f "contrast,sharpen" -o enhanced_drawings/
-```
-```
-
-This section provides:
-1. Specific filter combinations for different types of drawings
-2. Tips for scanning
-3. Explanation of each filter combination
-4. Complete workflow examples
-5. Batch processing instructions
-
-Let me know if you'd like me to add more filter combinations or specific examples!
-## Tips
-
-1. Use `--debug` flag with any command for detailed output
-2. For autofix:
-   - Use `frame` mode for artwork on contrasting backgrounds
-   - Use `border` mode for documents with white margins
-   - Try negative margins/borders for more aggressive cropping
-   - Use positive margins/borders to keep more content
-3. For merging scans:
-   - Remove white borders automatically
-   - Images should have overlapping regions
-   - Order matters when specifying individual files
-4. For PDF conversion:
-   - Higher DPI values give better quality but larger files
-   - PNG format is better for text documents
-   - JPG is better for photos
-
-## Common Issues
-
-- If merge fails, ensure images have enough overlapping content
-- For better auto-fix results, ensure scans have good contrast
-- When resizing, specify either width or height to maintain aspect ratio
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-MIT License
+- `blur:radius=3`

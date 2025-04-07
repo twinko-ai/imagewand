@@ -34,7 +34,7 @@ classifiers = [
 ]
 
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
@@ -47,6 +47,9 @@ imagewand-merge = "imagewand.scripts.merge_command:merge"
 Homepage = "https://github.com/twinko-ai/imagewand"
 Repository = "https://github.com/twinko-ai/imagewand"
 Documentation = "https://github.com/twinko-ai/imagewand#readme"
+
+[tool.setuptools]
+packages = ["imagewand", "imagewand.plugins", "imagewand.scripts"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

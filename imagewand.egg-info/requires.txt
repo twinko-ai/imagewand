@@ -7,3 +7,4 @@ opencv-python
 numpy
 click
 black>=24.8.0
+isort>=5.12.0

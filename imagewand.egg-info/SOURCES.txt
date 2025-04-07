@@ -1,3 +1,4 @@
+LICENSE
 README.md
 pyproject.toml
 setup.py
@@ -21,4 +22,6 @@ imagewand/scripts/merge_command.py
 tests/test_autofix.py
 tests/test_basic.py
 tests/test_cli.py
+tests/test_custom_filters.py
 tests/test_filters.py
+tests/test_resize.py
