@@ -15,6 +15,7 @@ from .config import list_presets, load_presets, save_preset
 from .filters import apply_filter, apply_filters, batch_apply_filters, list_filters
 from .pdf2img import pdf_to_images
 from .resize import resize_image
+from .imageinfo import print_image_info
 
 
 def print_execution_time(start_time):
@@ -178,6 +179,13 @@ def main():
         "--pattern",
         help="Image file pattern when using directory (e.g. *.jpg)",
         default="*.jpg",
+    )
+
+    # Info command
+    info_parser = subparsers.add_parser("info", help="Display image information")
+    info_parser.add_argument("image_path", help="Path to the image file")
+    info_parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Show detailed information including EXIF data"
     )
 
     args = parser.parse_args()
@@ -472,6 +480,10 @@ def main():
             print(f"Saving merged result to {output_path}")
             cv2.imwrite(output_path, result)
             print("Done!")
+            print_execution_time(start_time)
+
+        elif args.command == "info":
+            print_image_info(args.image_path, args.verbose)
             print_execution_time(start_time)
 
         else:

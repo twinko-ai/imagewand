@@ -42,6 +42,7 @@ imagewand = "imagewand.cli:main"
 resize-images = "imagewand.resize:resize_image"
 pdf-to-images = "imagewand.pdf2img:pdf_to_images"
 imagewand-merge = "imagewand.scripts.merge_command:merge"
+imagewand-info = "imagewand.imageinfo:print_image_info"
 
 [project.urls]
 Homepage = "https://github.com/twinko-ai/imagewand"
