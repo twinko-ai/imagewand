@@ -11,9 +11,9 @@ import cv2
 from tqdm import tqdm
 
 from .align import align_image
-from .autocrop import autocrop, crop_framed_photo, crop_with_content_detection
+from .autocrop import autocrop
 from .config import list_presets, load_presets, save_preset
-from .filters import apply_filter, apply_filters, batch_apply_filters, list_filters
+from .filters import apply_filters, batch_apply_filters, list_filters
 from .imageinfo import print_image_info
 from .pdf2img import pdf_to_images
 from .resize import resize_image
@@ -60,12 +60,13 @@ def version():
     help="Border percentage for border mode",
 )
 @click.option("--margin", default=-1, type=int, help="Margin in pixels for frame mode")
-def autocrop_cmd(input_path, output, mode, border_percent, margin):
+def autocrop(input_path, output, mode, border_percent, margin):
     """Auto-crop scanned images"""
-    from .autocrop import autocrop
-
     try:
-        result = autocrop(
+        # Import the function with an alias to avoid name collision
+        from .autocrop import autocrop as autocrop_func
+
+        result = autocrop_func(
             input_path, output, mode=mode, border_percent=border_percent, margin=margin
         )
         click.echo(f"Processed image saved to: {result}")
@@ -80,11 +81,13 @@ def autocrop_cmd(input_path, output, mode, border_percent, margin):
 @click.option("-o", "--output", help="Output path")
 def filter(input_path, filters, output):
     """Apply filters to images"""
-    from .filters import apply_filters
-
-    filters_list = filters.split(",") if filters else []
-    result = apply_filters([input_path], filters_list, output)
-    click.echo(f"Filtered image saved to: {result}")
+    try:
+        filters_list = filters.split(",") if filters else []
+        result = apply_filters(input_path, filters_list, output)
+        click.echo(f"Filtered image saved to: {result}")
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        return 1
 
 
 @cli.command()
@@ -119,90 +122,6 @@ def align(input_path, output, method, angle_threshold):
         return 1
 
 
-@cli.command()
-@click.argument("input_path")
-@click.option("-o", "--output", help="Output path")
-@click.option(
-    "-m",
-    "--mode",
-    type=click.Choice(["frame", "border", "auto"]),
-    default="frame",
-    help="Cropping mode: frame, border, or auto",
-)
-@click.option(
-    "-b",
-    "--border-percent",
-    type=int,
-    default=-1,
-    help="Border percentage for border mode",
-)
-@click.option(
-    "--margin",
-    type=int,
-    default=-1,
-    help="Margin in pixels for frame mode",
-)
-@click.option(
-    "-t",
-    "--threshold",
-    type=int,
-    default=30,
-    help="Brightness threshold for content detection",
-)
-def crop(input_path, output, mode, border_percent, margin, threshold):
-    """Crop images using frame detection or border removal"""
-    try:
-        start_time = time.time()
-
-        # Handle directory input
-        if os.path.isdir(input_path):
-            image_files = []
-            for ext in ["*.jpg", "*.jpeg", "*.png", "*.JPG", "*.JPEG", "*.PNG"]:
-                image_files.extend(glob.glob(os.path.join(input_path, ext)))
-
-            if not image_files:
-                click.echo(f"No image files found in {input_path}")
-                return 1
-
-            click.echo(f"Processing {len(image_files)} images...")
-
-            # Process each image with progress bar
-            with tqdm(total=len(image_files)) as pbar:
-                for i, img_path in enumerate(image_files):
-                    try:
-                        result = crop_image(
-                            img_path,
-                            None,  # Auto-generate output path for each image
-                            mode=mode,
-                            margin=margin,
-                            border_percent=border_percent,
-                            threshold=threshold,
-                        )
-                        # Update progress
-                        pbar.update(1)
-                        pbar.set_description(f"Processed: {os.path.basename(img_path)}")
-                    except Exception as e:
-                        click.echo(f"Error processing {img_path}: {str(e)}", err=True)
-
-            click.echo(f"Finished processing {len(image_files)} images")
-        else:
-            # Process single image
-            result = crop_image(
-                input_path,
-                output,
-                mode=mode,
-                margin=margin,
-                border_percent=border_percent,
-                threshold=threshold,
-            )
-            click.echo(f"Cropped image saved to: {result}")
-
-        print_execution_time(start_time)
-    except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
-        return 1
-
-
 def main():
     start_time = time.time()
     parser = argparse.ArgumentParser(description="ImageWand - Image manipulation tools")
@@ -226,7 +145,7 @@ def main():
     resize_parser.add_argument("-w", "--width", help="New width", type=int)
     resize_parser.add_argument("--height", help="New height", type=int)
 
-    # Autocrop command (renamed from autofix)
+    # Autocrop command
     autocrop_parser = subparsers.add_parser("autocrop", help="Auto-crop scanned images")
     autocrop_parser.add_argument("input_path", help="Path to the image file")
     autocrop_parser.add_argument("-o", "--output", help="Output path", default=None)
@@ -614,6 +533,7 @@ def main():
                         output_path=args.output,
                         method=args.method,
                         angle_threshold=args.angle_threshold,
+                        progress_callback=progress_callback,
                     )
 
                     # Ensure progress bar reaches 100%
@@ -624,7 +544,7 @@ def main():
                 print_execution_time(start_time)
             except Exception as e:
                 print(f"Error: {str(e)}")
-                sys.exit(1)
+                return 1
 
         else:
             parser.print_help()
@@ -638,131 +558,17 @@ def main():
     return 0
 
 
-@click.command()
-def list_presets_cmd():
-    """List available filter presets"""
-    presets = list_presets()
-    if not presets:
-        print("No saved presets found.")
-        return
-
-    print("Available presets:")
-    for name, filters in presets.items():
-        print(f"  - {name}: {filters}")
-
-
-@click.command()
-@click.argument("input_path", type=click.Path(exists=True))
-@click.option("-f", "--filters", help="Comma-separated list of filters to apply")
-@click.option("-p", "--preset", help="Use a saved filter preset")
-@click.option("-o", "--output", help="Output path")
-@click.option("--save-preset", help="Save the filter string as a preset")
-def filter_cmd(input_path, filters, preset, output, save_preset):
-    """Apply filters to images"""
-    start_time = time.time()
-    print(
-        f"Starting filter operation at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-    )
-
-    try:
-        filter_string = None
-
-        # Get filters either from direct input or preset
-        if preset:
-            presets = load_presets()
-            if preset not in presets:
-                available = "\n".join(
-                    f"  - {name}: {value}" for name, value in presets.items()
-                )
-                raise click.UsageError(
-                    f"Preset '{preset}' not found. Available presets:\n{available}"
-                )
-            filter_string = presets[preset]
-        elif filters:
-            filter_string = filters
-        else:
-            raise click.UsageError("Either --filters or --preset must be specified")
-
-        # Save preset if requested
-        if save_preset:
-            if not filter_string:
-                raise click.UsageError("No filters specified to save as preset")
-            save_preset(save_preset, filter_string)
-            print(f"Saved filter preset '{save_preset}': {filter_string}")
-
-        # Apply filters
-        result = apply_filters(input_path, filter_string.split(","), output)
-        print(f"Filtered image saved to: {result}")
-
-        # Print execution time
-        print_execution_time(start_time)
-
-    except Exception as e:
-        print(f"\nError: {str(e)}")
-        print_execution_time(start_time)
-        raise
-
-
-@click.command()
-@click.argument("input_path", type=click.Path(exists=True))
-@click.option("-o", "--output", help="Output path")
-@click.option(
-    "-m",
-    "--mode",
-    type=click.Choice(["auto", "frame", "border"]),
-    default="auto",
-    help="Cropping mode",
-)
-@click.option(
-    "-t",
-    "--threshold",
-    type=int,
-    default=30,
-    help="Brightness threshold for content detection",
-)
-def autocrop_cmd(input_path, output, mode, threshold):
-    """Auto-crop image content"""
-    try:
-        result = autocrop(input_path, output, mode, threshold)
-        print(f"Auto-cropped image saved to: {result}")
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return 1
-
-
 def add_merge_command(subparsers):
-    """Add merge command to the parser"""
-    parser = subparsers.add_parser(
-        "merge", help="Merge multiple images into a panorama"
+    """Add the merge command to the subparsers"""
+    merge_parser = subparsers.add_parser("merge", help="Merge multiple images")
+    merge_parser.add_argument(
+        "input", nargs="+", help="Input images or directories of images"
     )
-    parser.add_argument(
-        "input",
-        nargs="+",  # Accept multiple arguments
-        help="Input directory or image files",
+    merge_parser.add_argument("-o", "--output", help="Output path", default=None)
+    merge_parser.add_argument(
+        "--debug", action="store_true", help="Enable debug mode with visualizations"
     )
-    parser.add_argument("-o", "--output", help="Output file path", default=None)
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    parser.set_defaults(func=merge_command)
-
-
-def merge_command(args):
-    """Handle merge command"""
-    from imagewand.automerge import automerge
-
-    # If there's only one input and it's a directory or glob pattern, use it directly
-    if len(args.input) == 1 and (os.path.isdir(args.input[0]) or "*" in args.input[0]):
-        input_path = args.input[0]
-    else:
-        # Otherwise, treat the inputs as a list of image files
-        input_path = args.input
-
-    try:
-        result = automerge(input_path, args.output, debug=args.debug)
-        print(f"Merged image saved to: {result}")
-    except Exception as e:
-        print(f"Error merging images: {e}")
-        sys.exit(1)
 
 
 if __name__ == "__main__":
-    cli()
+    sys.exit(main())
