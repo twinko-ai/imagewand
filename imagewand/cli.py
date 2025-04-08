@@ -264,24 +264,7 @@ def main():
     )
 
     # Add merge command
-    merge_parser = subparsers.add_parser(
-        "merge", help="Merge multiple scanned images into one"
-    )
-    merge_parser.add_argument(
-        "input_path", help="Path to image files or directory containing images"
-    )
-    merge_parser.add_argument(
-        "-o",
-        "--output",
-        help="Output path (default: merged_<dirname>.jpg)",
-        default=None,
-    )
-    merge_parser.add_argument("--debug", help="Enable debug mode", action="store_true")
-    merge_parser.add_argument(
-        "--pattern",
-        help="Image file pattern when using directory (e.g. *.jpg)",
-        default="*.jpg",
-    )
+    add_merge_command(subparsers)
 
     # Info command
     info_parser = subparsers.add_parser("info", help="Display image information")
@@ -557,17 +540,17 @@ def main():
         elif args.command == "merge":
             # Create default output path if not specified
             if args.output is None:
-                if os.path.isdir(args.input_path):
+                if os.path.isdir(args.input[0]) or '*' in args.input[0]:
                     # For directory input, use directory name
-                    dirname = os.path.basename(os.path.normpath(args.input_path))
+                    dirname = os.path.basename(os.path.normpath(args.input[0]))
                     output_path = os.path.join(
-                        os.path.dirname(args.input_path), f"merged_{dirname}.jpg"
+                        os.path.dirname(args.input[0]), f"merged_{dirname}.jpg"
                     )
                 else:
                     # For single file input, use file name
-                    input_dir = os.path.dirname(args.input_path)
+                    input_dir = os.path.dirname(args.input[0])
                     input_basename = os.path.splitext(
-                        os.path.basename(args.input_path)
+                        os.path.basename(args.input[0])
                     )[0]
                     output_path = os.path.join(
                         input_dir, f"merged_{input_basename}.jpg"
@@ -582,26 +565,24 @@ def main():
 
             # Get list of images to process
             image_paths = []
-            if os.path.isdir(args.input_path):
-                # Handle directory input
-                patterns = ["*.jpg", "*.jpeg", "*.png", "*.tiff", "*.bmp"]
-                for pattern in patterns:
-                    image_paths.extend(
-                        glob.glob(os.path.join(args.input_path, pattern))
-                    )
+            for path in args.input:
+                if os.path.isdir(path) or '*' in path:
+                    # Handle directory input
+                    patterns = ["*.jpg", "*.jpeg", "*.png", "*.tiff", "*.bmp"]
+                    for pattern in patterns:
+                        image_paths.extend(
+                            glob.glob(os.path.join(path, pattern))
+                        )
+                else:
+                    # Single file input
+                    if not os.path.exists(path):
+                        print(f"Error: Input path {path} does not exist")
+                        return 1
+                    image_paths.append(path)
 
-                if not image_paths:
-                    print(f"Error: No images found in directory {args.input_path}")
-                    return 1
-
-                # Sort paths to ensure consistent ordering
-                image_paths.sort()
-            else:
-                # Single file input
-                if not os.path.exists(args.input_path):
-                    print(f"Error: Input path {args.input_path} does not exist")
-                    return 1
-                image_paths = [args.input_path]
+            if len(image_paths) < 2:
+                print("Error: At least two images are required for merging")
+                return 1
 
             # Load images with progress bar
             print(f"Loading {len(image_paths)} images...")
@@ -612,10 +593,6 @@ def main():
                     print(f"Error: Could not load image {path}")
                     return 1
                 images.append(img)
-
-            if len(images) < 2:
-                print("Error: At least two images are required for merging")
-                return 1
 
             # Initialize merger
             from .automerge import AutoMerge
@@ -804,6 +781,44 @@ def autocrop_cmd(input_path, output, mode, threshold):
     except Exception as e:
         print(f"Error: {str(e)}")
         return 1
+
+
+def add_merge_command(subparsers):
+    """Add merge command to the parser"""
+    parser = subparsers.add_parser(
+        "merge", help="Merge multiple images into a panorama"
+    )
+    parser.add_argument(
+        "input",
+        nargs="+",  # Accept multiple arguments
+        help="Input directory or image files",
+    )
+    parser.add_argument(
+        "-o", "--output", help="Output file path", default=None
+    )
+    parser.add_argument(
+        "--debug", action="store_true", help="Enable debug mode"
+    )
+    parser.set_defaults(func=merge_command)
+
+
+def merge_command(args):
+    """Handle merge command"""
+    from imagewand.automerge import automerge
+    
+    # If there's only one input and it's a directory or glob pattern, use it directly
+    if len(args.input) == 1 and (os.path.isdir(args.input[0]) or '*' in args.input[0]):
+        input_path = args.input[0]
+    else:
+        # Otherwise, treat the inputs as a list of image files
+        input_path = args.input
+    
+    try:
+        result = automerge(input_path, args.output, debug=args.debug)
+        print(f"Merged image saved to: {result}")
+    except Exception as e:
+        print(f"Error merging images: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
