@@ -1,4 +1,6 @@
 import os
+import tempfile
+from unittest.mock import MagicMock, patch
 
 import cv2
 import numpy as np
@@ -14,6 +16,23 @@ from imagewand.align import (
 # Path to test data
 TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), "test_data", "images")
 OCTOPUS_TILT_PATH = os.path.join(TEST_DATA_DIR, "octopus_tilt.jpg")
+
+
+@pytest.fixture
+def sample_image():
+    """Create a temporary sample image for testing."""
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+        # Create a simple test image with a tilted line
+        img = np.zeros((200, 200), dtype=np.uint8)
+        # Draw a line at 15 degrees
+        cv2.line(img, (50, 100), (150, 130), 255, 5)
+        # Save the image
+        cv2.imwrite(tmp.name, img)
+
+    yield tmp.name
+    # Clean up
+    if os.path.exists(tmp.name):
+        os.remove(tmp.name)
 
 
 def test_align_image_exists():
@@ -178,3 +197,156 @@ def test_filename_generation():
         # Clean up
         if os.path.exists(result):
             os.remove(result)
+
+
+def test_align_image_invalid_method():
+    """Test alignment with an invalid method"""
+    # Create a temporary output path
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_out:
+        output_path = tmp_out.name
+
+    try:
+        # Call align_image with an invalid method
+        result = align_image(OCTOPUS_TILT_PATH, output_path, method="invalid_method")
+
+        # If we get here, the function didn't raise an error
+        # Let's check that it fell back to a default method by verifying the output exists
+        assert os.path.exists(result), "Output file was not created"
+        assert os.path.getsize(result) > 0, "Output file is empty"
+
+        # Check that the method name is not in the output path (should use default)
+        assert (
+            "invalid_method" not in result
+        ), "Invalid method name should not be in output path"
+
+    finally:
+        # Clean up
+        if os.path.exists(output_path):
+            os.remove(output_path)
+
+
+def test_align_image_nonexistent_file():
+    """Test alignment with a nonexistent file"""
+    with pytest.raises(ValueError, match="Could not read image"):
+        align_image("nonexistent_file.jpg")
+
+
+def test_align_image_no_rotation_needed(sample_image):
+    """Test alignment when no rotation is needed (angle below threshold)"""
+    # Create a temporary output path
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_out:
+        output_path = tmp_out.name
+
+    try:
+        # Set a high threshold so no rotation is performed
+        result = align_image(sample_image, output_path, angle_threshold=20.0)
+
+        # Check that the output file exists
+        assert os.path.exists(result), f"Output file not created: {result}"
+
+        # Load the original and aligned images
+        original = cv2.imread(sample_image)
+        aligned = cv2.imread(result)
+
+        # Check that the images have the same dimensions (no rotation applied)
+        assert original.shape == aligned.shape, "Images should have the same dimensions"
+
+    finally:
+        # Clean up
+        if os.path.exists(output_path):
+            os.remove(output_path)
+
+
+def test_align_image_with_numpy_array():
+    """Test alignment with a numpy array instead of a file path"""
+    # Load the test image as a numpy array
+    img = cv2.imread(OCTOPUS_TILT_PATH)
+    assert img is not None, f"Failed to load test image: {OCTOPUS_TILT_PATH}"
+
+    # Create a temporary output path
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_out:
+        output_path = tmp_out.name
+
+    try:
+        # Since align_image doesn't support numpy arrays directly, we'll save it first
+        temp_input = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False).name
+        cv2.imwrite(temp_input, img)
+
+        # Run alignment with the temporary file
+        result = align_image(temp_input, output_path)
+
+        # Check that the output file exists
+        assert os.path.exists(result), f"Output file not created: {result}"
+
+        # Check that the output file is not empty
+        assert os.path.getsize(result) > 0, "Output file is empty"
+
+        # Clean up the temporary input file
+        if os.path.exists(temp_input):
+            os.remove(temp_input)
+
+    finally:
+        # Clean up
+        if os.path.exists(output_path):
+            os.remove(output_path)
+
+
+def test_align_image_with_debug_visualization():
+    """Test alignment with visualization of intermediate steps"""
+    # Create a temporary output path
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_out:
+        output_path = tmp_out.name
+
+    try:
+        # Create a real mock for cv2.imwrite that allows the actual function to be called
+        real_imwrite = cv2.imwrite
+
+        def mock_imwrite(path, img):
+            # Call the real function for all paths
+            return real_imwrite(path, img)
+
+        # Patch cv2.imwrite with our mock
+        with patch("cv2.imwrite", side_effect=mock_imwrite) as mock_imwrite:
+            # Run alignment
+            result = align_image(OCTOPUS_TILT_PATH, output_path)
+
+            # Check that the output file exists
+            assert os.path.exists(result), f"Output file not created: {result}"
+
+            # Check that cv2.imwrite was called at least once
+            assert mock_imwrite.call_count >= 1, "cv2.imwrite was not called"
+
+    finally:
+        # Clean up
+        if os.path.exists(output_path):
+            os.remove(output_path)
+
+
+def test_method_selection():
+    """Test that different methods are selected correctly"""
+    # Create a temporary output path
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_out:
+        output_path = tmp_out.name
+
+    try:
+        # Test with each method
+        methods = ["hough", "contour", "center"]
+        for method in methods:
+            # Patch the specific detection function
+            with patch(f"imagewand.align._detect_angle_{method}") as mock_detect:
+                mock_detect.return_value = 10.0  # Mock a 10-degree angle
+
+                # Run alignment with this method
+                result = align_image(OCTOPUS_TILT_PATH, output_path, method=method)
+
+                # Check that the specific detection function was called
+                mock_detect.assert_called_once()
+
+                # Clean up the result
+                if os.path.exists(result) and result != output_path:
+                    os.remove(result)
+
+    finally:
+        # Clean up
+        if os.path.exists(output_path):
+            os.remove(output_path)

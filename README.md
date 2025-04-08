@@ -27,7 +27,7 @@ ImageWand provides several commands for different image manipulation tasks:
 - `align`: Automatically align tilted images to be horizontal/vertical
 - `filter`: Apply various filters to images
 - `merge`: Merge multiple scanned images into one
-- `crop`: Crop images using frame detection or border removal
+- `autocrop`: Automatically crop images using frame detection or border removal
 - `info`: Display detailed information about images
 
 ## Command Usage
@@ -149,37 +149,39 @@ imagewand merge image1.jpg image2.jpg image3.jpg -o merged.jpg
 imagewand merge images_folder/ -o merged.jpg --debug
 ```
 
-### Crop Images
+### Autocrop Images
 
-Crop images using frame detection or border removal:
+Automatically crop images using frame detection or border removal:
 
 ```bash
+# Auto mode - Tries frame detection first, falls back to border removal
+imagewand autocrop photo.jpg
+
 # Frame mode - Extract photo from contrasting frame/background
-imagewand crop photo.jpg -m frame
-imagewand crop photo.jpg -m frame --margin -2  # More aggressive crop
-imagewand crop photo.jpg -m frame --margin 5   # Add margin
+imagewand autocrop photo.jpg -m frame
+imagewand autocrop photo.jpg -m frame --margin -5  # More aggressive crop
+imagewand autocrop photo.jpg -m frame --margin 10  # Add margin
 
 # Border mode - Remove white margins only
-imagewand crop photo.jpg -m border
-imagewand crop photo.jpg -m border -b -2  # More aggressive crop
-imagewand crop photo.jpg -m border -b 5   # Keep more border
-
-# Adjust threshold for content detection (default: 30)
-imagewand crop photo.jpg -m border -t 50  # Higher threshold for darker content
+imagewand autocrop photo.jpg -m border
+imagewand autocrop photo.jpg -m border -b -5  # More aggressive crop
+imagewand autocrop photo.jpg -m border -b 10  # Keep more border
 ```
 
 Cropping modes explained:
+- `auto` (default): Tries frame detection first, falls back to border removal if no frame is detected
 - `frame`: Best for photos on contrasting backgrounds (e.g., artwork on black paper)
   - Use `--margin` to adjust cropping (negative for tighter crop, positive for more margin)
-  - Default margin is -1 for slightly aggressive crop
+  - Default margin is -5 for slightly aggressive crop
   
 - `border`: Best for documents with white margins
   - Use `-b` to adjust border percentage (negative for tighter crop, positive to keep more border)
   - Default border is 0 for exact content boundaries
 
 Output filenames:
-- Frame mode: `photo_frame.jpg` or `photo_frame_m2.jpg` (with margin 2)
-- Border mode: `photo_border.jpg` or `photo_border_b5.jpg` (with 5% border)
+- Auto mode: `photo_auto.jpg`, `photo_auto_frame.jpg`, or `photo_auto_border.jpg`
+- Frame mode: `photo_frame.jpg` or `photo_frame_m10.jpg` (with margin 10)
+- Border mode: `photo_border.jpg` or `photo_border_b10.jpg` (with 10% border)
 
 ### Image Information
 

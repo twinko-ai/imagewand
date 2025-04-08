@@ -13,7 +13,6 @@ from tqdm import tqdm
 from .align import align_image
 from .autocrop import autocrop, crop_framed_photo, crop_with_content_detection
 from .config import list_presets, load_presets, save_preset
-from .crop import crop_image
 from .filters import apply_filter, apply_filters, batch_apply_filters, list_filters
 from .imageinfo import print_image_info
 from .pdf2img import pdf_to_images
@@ -303,37 +302,6 @@ def main():
         type=float,
         default=1.0,
         help="Minimum angle to correct (degrees)",
-    )
-
-    # Crop command
-    crop_parser = subparsers.add_parser(
-        "crop", help="Crop images using frame detection or border removal"
-    )
-    crop_parser.add_argument("image_path", help="Path to the image file")
-    crop_parser.add_argument("-o", "--output", help="Output path", default=None)
-    crop_parser.add_argument(
-        "-m",
-        "--mode",
-        choices=["frame", "border", "auto"],
-        default="frame",
-        help="Cropping mode: frame, border, or auto",
-    )
-    crop_parser.add_argument(
-        "-b",
-        "--border-percent",
-        type=int,
-        default=-1,
-        help="Border percentage for border mode",
-    )
-    crop_parser.add_argument(
-        "--margin", type=int, default=-1, help="Margin in pixels for frame mode"
-    )
-    crop_parser.add_argument(
-        "-t",
-        "--threshold",
-        type=int,
-        default=30,
-        help="Brightness threshold for content detection",
     )
 
     args = parser.parse_args()
@@ -653,38 +621,6 @@ def main():
                         pbar.update(100 - last_progress)
 
                 print(f"Aligned image saved to: {result}")
-                print_execution_time(start_time)
-            except Exception as e:
-                print(f"Error: {str(e)}")
-                sys.exit(1)
-
-        elif args.command == "crop":
-            try:
-                # Create progress bar
-                with tqdm(total=100, desc="Cropping image") as pbar:
-                    last_progress = 0
-
-                    def progress_callback(percent):
-                        nonlocal last_progress
-                        increment = percent - last_progress
-                        if increment > 0:
-                            pbar.update(increment)
-                            last_progress = percent
-
-                    result = crop_image(
-                        args.image_path,
-                        args.output,
-                        mode=args.mode,
-                        margin=args.margin,
-                        border_percent=args.border_percent,
-                        threshold=args.threshold,
-                    )
-
-                    # Ensure progress bar reaches 100%
-                    if last_progress < 100:
-                        pbar.update(100 - last_progress)
-
-                print(f"Cropped image saved to: {result}")
                 print_execution_time(start_time)
             except Exception as e:
                 print(f"Error: {str(e)}")
