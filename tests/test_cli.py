@@ -107,17 +107,17 @@ def test_cli_autocrop_command():
     with runner.isolated_filesystem():
         # Create a test image
         test_img = create_test_image("test.jpg")
-        
+
         # Test basic autocrop command
         result = runner.invoke(cli, ["autocrop", test_img])
         assert result.exit_code == 0
         assert "Cropped image saved" in result.output
-        
+
         # Test with frame mode
         result = runner.invoke(cli, ["autocrop", test_img, "-m", "frame"])
         assert result.exit_code == 0
         assert "Cropped image saved" in result.output
-        
+
         # Test with border mode
         result = runner.invoke(cli, ["autocrop", test_img, "-m", "border"])
         assert result.exit_code == 0
@@ -277,9 +277,11 @@ def test_main_autocrop():
         # Create a test image
         test_img = os.path.join(temp_dir, "test.jpg")
         create_test_image(test_img)
-        
+
         # Test autocrop command
-        with patch.object(sys, 'argv', ['imagewand', 'autocrop', test_img]):
-            with patch('builtins.print') as mock_print:
+        with patch.object(sys, "argv", ["imagewand", "autocrop", test_img]):
+            with patch("builtins.print") as mock_print:
                 main()
-                mock_print.assert_any_call(f"Cropped image saved to: {temp_dir}/test_auto.jpg")
+                mock_print.assert_any_call(
+                    f"Cropped image saved to: {temp_dir}/test_auto.jpg"
+                )
