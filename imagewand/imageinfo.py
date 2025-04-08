@@ -1,11 +1,11 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 import cv2
 import numpy as np
-from PIL import Image, ExifTags
+from PIL import ExifTags, Image
 
 
 def get_image_info(image_path: str) -> Dict[str, Any]:

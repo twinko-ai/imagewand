@@ -10,14 +10,14 @@ import click
 import cv2
 from tqdm import tqdm
 
+from .align import align_image
 from .autocrop import autocrop, crop_framed_photo, crop_with_content_detection
 from .config import list_presets, load_presets, save_preset
+from .crop import crop_image
 from .filters import apply_filter, apply_filters, batch_apply_filters, list_filters
+from .imageinfo import print_image_info
 from .pdf2img import pdf_to_images
 from .resize import resize_image
-from .imageinfo import print_image_info
-from .align import align_image
-from .crop import crop_image
 
 
 def print_execution_time(start_time):

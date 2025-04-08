@@ -1,14 +1,15 @@
 import os
-import pytest
+
 import cv2
 import numpy as np
-from imagewand.align import (
-    align_image,
-    _detect_angle_hough,
-    _detect_angle_contour,
-    _detect_angle_center,
-)
+import pytest
 
+from imagewand.align import (
+    _detect_angle_center,
+    _detect_angle_contour,
+    _detect_angle_hough,
+    align_image,
+)
 
 # Path to test data
 TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), "test_data", "images")

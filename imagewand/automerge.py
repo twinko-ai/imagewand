@@ -1,6 +1,6 @@
+import glob
 import logging
 import os
-import glob
 from typing import List, Optional, Tuple, Union
 
 import cv2

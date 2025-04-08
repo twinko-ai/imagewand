@@ -1,16 +1,16 @@
 import os
-import pytest
+from pathlib import Path
+
 import cv2
 import numpy as np
-from pathlib import Path
+import pytest
 
 from imagewand.autocrop import (
     autocrop,
+    crop_dark_background,
     crop_framed_photo,
     crop_with_content_detection,
-    crop_dark_background,
 )
-
 
 # Define test image path
 TEST_IMAGE = "tests/test_data/images/octopus.jpg"

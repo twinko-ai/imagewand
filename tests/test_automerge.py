@@ -1,14 +1,14 @@
+import glob
 import os
-import pytest
+import shutil
+import tempfile
+from pathlib import Path
+
 import cv2
 import numpy as np
-from pathlib import Path
-import tempfile
-import shutil
-import glob
+import pytest
 
-from imagewand.automerge import automerge, AutoMerge
-
+from imagewand.automerge import AutoMerge, automerge
 
 # Define test image paths
 TEST_IMAGES_DIR = "tests/test_data/images/shark"

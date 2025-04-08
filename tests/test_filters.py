@@ -1,12 +1,13 @@
 import os
-import pytest
 import shutil
-from pathlib import Path
-import tempfile
 import subprocess
+import tempfile
+from pathlib import Path
+
+import pytest
 from PIL import Image
 
-from imagewand.filters import apply_filters, parse_filter_string, list_filters
+from imagewand.filters import apply_filters, list_filters, parse_filter_string
 
 # Test image path
 TEST_IMAGE = "tests/test_data/images/octopus.jpg"
