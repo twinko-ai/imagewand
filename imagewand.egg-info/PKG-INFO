@@ -60,6 +60,7 @@ ImageWand provides several commands for different image manipulation tasks:
 - `pdf2img`: Convert PDF files to images
 - `resize`: Resize images
 - `autofix`: Automatically straighten and crop scanned images
+- `align`: Automatically align tilted images to be horizontal/vertical
 - `filter`: Apply various filters to images
 - `merge`: Merge multiple scanned images into one
 
@@ -132,6 +133,34 @@ Output filenames reflect the mode and parameters used:
 - Frame mode: `photo_frame.jpg` or `photo_frame_m2.jpg` (with margin 2)
 - Border mode: `photo_border.jpg` or `photo_border_b5.jpg` (with 5% border)
 - Auto mode: `photo_auto_frame.jpg` or `photo_auto_border.jpg`
+
+### Align Tilted Images
+
+Automatically detect and correct the rotation of tilted images:
+
+```bash
+# Basic usage - auto-detects the best method
+imagewand align tilted_scan.jpg
+
+# Specify output path
+imagewand align tilted_scan.jpg -o aligned.jpg
+
+# Choose specific alignment method
+imagewand align tilted_scan.jpg --method hough
+imagewand align tilted_scan.jpg --method contour
+
+# Adjust minimum angle threshold for correction (default: 1.0 degrees)
+imagewand align tilted_scan.jpg --angle-threshold 0.5  # More sensitive
+imagewand align tilted_scan.jpg --angle-threshold 2.0  # Less sensitive
+```
+
+Alignment methods explained:
+- `auto` (default): Tries both methods and uses the one that detects a more significant angle
+- `hough`: Uses Hough Line Transform, best for documents with clear straight lines
+- `contour`: Uses contour analysis, better for images with distinct shapes
+
+Output filenames:
+- Default: `image_aligned.jpg`
 
 ### Apply Filters
 

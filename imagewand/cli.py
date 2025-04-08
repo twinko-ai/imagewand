@@ -10,12 +10,13 @@ import click
 import cv2
 from tqdm import tqdm
 
-from .autofix import autofix, crop_framed_photo, crop_with_content_detection
+from .autofix import autofix, crop_framed_photo, remove_borders
 from .config import list_presets, load_presets, save_preset
 from .filters import apply_filter, apply_filters, batch_apply_filters, list_filters
 from .pdf2img import pdf_to_images
 from .resize import resize_image
 from .imageinfo import print_image_info
+from .align import align_image
 
 
 def print_execution_time(start_time):
@@ -51,14 +52,14 @@ def version():
 @click.option(
     "-m", "--mode", default="auto", help="Cropping mode: auto, frame, or border"
 )
-@click.option("-b", "--border", default=0, help="Border percentage for border mode")
+@click.option("-b", "--border-percent", default=-1, help="Border percentage for border mode")
 @click.option("--margin", default=-1, help="Margin in pixels for frame mode")
-def autofix(input_path, output, mode, border, margin):
+def autofix(input_path, output, mode, border_percent, margin):
     """Auto-fix scanned images"""
     from .autofix import autofix as fix_image
 
     result = fix_image(
-        input_path, output, mode=mode, border_percent=border, margin=margin
+        input_path, output, mode=mode, border_percent=border_percent, margin=margin
     )
     click.echo(f"Processed image saved to: {result}")
 
@@ -74,6 +75,31 @@ def filter(input_path, filters, output):
     filters_list = filters.split(",") if filters else []
     result = apply_filters([input_path], filters_list, output)
     click.echo(f"Filtered image saved to: {result}")
+
+
+@cli.command()
+@click.argument("input_path")
+@click.option("-o", "--output", help="Output path")
+@click.option(
+    "-m", "--method", 
+    default="auto", 
+    type=click.Choice(["auto", "hough", "contour", "center"]),
+    help="Alignment method to use"
+)
+@click.option("-a", "--angle-threshold", default=1.0, type=float, help="Minimum angle to correct (degrees)")
+def align(input_path, output, method, angle_threshold):
+    """Automatically align tilted images to be horizontal/vertical"""
+    try:
+        result = align_image(
+            input_path, 
+            output_path=output,
+            method=method,
+            angle_threshold=angle_threshold
+        )
+        click.echo(f"Aligned image saved to: {result}")
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        return 1
 
 
 def main():
@@ -188,6 +214,25 @@ def main():
         "-v", "--verbose", action="store_true", help="Show detailed information including EXIF data"
     )
 
+    # Align command
+    align_parser = subparsers.add_parser(
+        "align", help="Automatically align tilted images to be horizontal/vertical"
+    )
+    align_parser.add_argument("image_path", help="Path to the image file")
+    align_parser.add_argument("-o", "--output", help="Output path", default=None)
+    align_parser.add_argument(
+        "--method", 
+        choices=["auto", "hough", "contour", "center"],
+        default="auto",
+        help="Alignment method to use"
+    )
+    align_parser.add_argument(
+        "--angle-threshold", 
+        type=float,
+        default=1.0,
+        help="Minimum angle to correct (degrees)"
+    )
+
     args = parser.parse_args()
 
     print(f"Starting operation at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -231,19 +276,14 @@ def main():
             print_execution_time(start_time)
 
         elif args.command == "resize":
-            # Create default output path if not specified
+            # Let the resize_image function handle the default output path
             if args.output is None:
-                image_dir = os.path.dirname(args.image_path)
-                image_basename = os.path.splitext(os.path.basename(args.image_path))[0]
-                image_ext = os.path.splitext(args.image_path)[1]
-                output_path = os.path.join(
-                    image_dir, f"{image_basename}_resized{image_ext}"
-                )
+                output_path = None
             else:
                 output_path = args.output
 
             # Create output directory if it doesn't exist
-            output_dir = os.path.dirname(output_path)
+            output_dir = os.path.dirname(output_path) if output_path else None
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
 
@@ -276,22 +316,22 @@ def main():
                         args.image_path, args.output, margin=args.margin
                     )
                 elif args.mode == "border":
-                    result = autofix(
+                    result = remove_borders(
                         args.image_path, args.output, border_percent=args.border
                     )
                 else:
-                    result = crop_with_content_detection(
-                        args.image_path,
-                        args.output,
+                    result = autofix(
+                        args.image_path, 
+                        args.output, 
                         mode=args.mode,
-                        border_percent=args.border,
                         margin=args.margin,
+                        border_percent=args.border
                     )
                 print(f"Processed image saved to: {result}")
                 print_execution_time(start_time)
             except Exception as e:
                 print(f"Error: {str(e)}")
-                return 1
+                sys.exit(1)
 
         elif args.command == "filter":
             if not args.filters and not args.preset:
@@ -486,6 +526,36 @@ def main():
             print_image_info(args.image_path, args.verbose)
             print_execution_time(start_time)
 
+        elif args.command == "align":
+            try:
+                # Create progress bar
+                with tqdm(total=100, desc="Aligning image") as pbar:
+                    last_progress = 0
+                    
+                    def progress_callback(percent):
+                        nonlocal last_progress
+                        increment = percent - last_progress
+                        if increment > 0:
+                            pbar.update(increment)
+                            last_progress = percent
+                    
+                    result = align_image(
+                        args.image_path,
+                        output_path=args.output,
+                        method=args.method,
+                        angle_threshold=args.angle_threshold
+                    )
+                    
+                    # Ensure progress bar reaches 100%
+                    if last_progress < 100:
+                        pbar.update(100 - last_progress)
+                
+                print(f"Aligned image saved to: {result}")
+                print_execution_time(start_time)
+            except Exception as e:
+                print(f"Error: {str(e)}")
+                sys.exit(1)
+
         else:
             parser.print_help()
             return 1
@@ -583,7 +653,7 @@ def filter_cmd(input_path, filters, preset, output, save_preset):
 def crop_cmd(input_path, output, mode, threshold):
     """Crop image content"""
     try:
-        result = crop_with_content_detection(input_path, output, mode, threshold)
+        result = remove_borders(input_path, output, mode, threshold)
         print(f"Cropped image saved to: {result}")
     except Exception as e:
         print(f"Error: {str(e)}")

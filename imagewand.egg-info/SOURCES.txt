@@ -3,11 +3,13 @@ README.md
 pyproject.toml
 setup.py
 imagewand/__init__.py
+imagewand/align.py
 imagewand/autofix.py
 imagewand/automerge.py
 imagewand/cli.py
 imagewand/config.py
 imagewand/filters.py
+imagewand/imageinfo.py
 imagewand/pdf2img.py
 imagewand/resize.py
 imagewand.egg-info/PKG-INFO
@@ -24,4 +26,6 @@ tests/test_basic.py
 tests/test_cli.py
 tests/test_custom_filters.py
 tests/test_filters.py
+tests/test_imageinfo.py
+tests/test_pdf2img.py
 tests/test_resize.py

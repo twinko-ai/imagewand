@@ -24,6 +24,7 @@ ImageWand provides several commands for different image manipulation tasks:
 - `pdf2img`: Convert PDF files to images
 - `resize`: Resize images
 - `autofix`: Automatically straighten and crop scanned images
+- `align`: Automatically align tilted images to be horizontal/vertical
 - `filter`: Apply various filters to images
 - `merge`: Merge multiple scanned images into one
 
@@ -97,40 +98,39 @@ Output filenames reflect the mode and parameters used:
 - Border mode: `photo_border.jpg` or `photo_border_b5.jpg` (with 5% border)
 - Auto mode: `photo_auto_frame.jpg` or `photo_auto_border.jpg`
 
+### Align Tilted Images
+
+Automatically detect and correct the rotation of tilted images:
+
+```bash
+# Basic usage - auto-detects the best method
+imagewand align tilted_scan.jpg
+
+# Specify output path
+imagewand align tilted_scan.jpg -o aligned.jpg
+
+# Choose specific alignment method
+imagewand align tilted_scan.jpg -m hough
+imagewand align tilted_scan.jpg -m contour
+imagewand align tilted_scan.jpg -m center
+
+# Adjust minimum angle threshold for correction (default: 1.0 degrees)
+imagewand align tilted_scan.jpg -a 0.5  # More sensitive
+imagewand align tilted_scan.jpg -a 2.0  # Less sensitive
+```
+
+Alignment methods explained:
+- `auto` (default): Tries all methods and uses the one that detects the most significant angle
+- `hough`: Uses Hough Line Transform, best for documents with clear straight lines
+- `contour`: Uses contour analysis, better for images with distinct shapes
+- `center`: Focuses on the central portion of the image, ignoring the background (best for photos with clear subjects)
+
+Output filenames:
+- Default: `image_aligned.jpg` (for default parameters)
+- With parameters: `image_aligned_hough_a0.5.jpg` (for method=hough, angle_threshold=0.5)
+
 ### Apply Filters
 
 Apply various image filters:
 
-```bash
-# Apply single filter
-imagewand filter input.jpg -f grayscale
-
-# Apply multiple filters
-imagewand filter input.jpg -f "grayscale,sharpen"
-
-# Process directory recursively
-imagewand filter images/ -f grayscale -r
-
-# List available filters
-imagewand list-filters
 ```
-
-### Filter Parameters
-
-You can customize filter parameters using the format `filtername:param=value`:
-
-```bash
-# Adjust contrast level (default is 1.5)
-imagewand filter drawing.jpg -f "contrast:factor=1.2"
-
-# Multiple filters with custom parameters
-imagewand filter drawing.jpg -f "saturation:factor=1.3,contrast:factor=1.2,sharpen:factor=1.8"
-
-# Mix of default and custom parameters
-imagewand filter drawing.jpg -f "saturation:factor=1.3,contrast,sharpen:factor=2.0"
-```
-
-Common filter parameters:
-- `contrast:factor=1.2` - Lighter contrast (default: 1.5)
-- `sharpen:factor=1.8` - Stronger sharpening (default: 2.0)
-- `blur:radius=3`
