@@ -1,10 +1,9 @@
 LICENSE
 README.md
 pyproject.toml
-setup.py
 imagewand/__init__.py
 imagewand/align.py
-imagewand/autofix.py
+imagewand/autocrop.py
 imagewand/automerge.py
 imagewand/cli.py
 imagewand/config.py
@@ -21,9 +20,12 @@ imagewand.egg-info/top_level.txt
 imagewand/plugins/__init__.py
 imagewand/plugins/custom_filters.py
 imagewand/scripts/merge_command.py
-tests/test_autofix.py
+tests/test_align.py
+tests/test_autocrop.py
+tests/test_automerge.py
 tests/test_basic.py
 tests/test_cli.py
+tests/test_config.py
 tests/test_custom_filters.py
 tests/test_filters.py
 tests/test_imageinfo.py

@@ -43,7 +43,7 @@ def cli():
 @cli.command()
 def version():
     """Show version information"""
-    click.echo("ImageWand version 0.1.0")
+    click.echo("ImageWand version 0.1.1")
 
 
 @cli.command()
