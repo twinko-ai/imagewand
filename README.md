@@ -27,6 +27,7 @@ ImageWand provides several commands for different image manipulation tasks:
 - `align`: Automatically align tilted images to be horizontal/vertical
 - `filter`: Apply various filters to images
 - `merge`: Merge multiple scanned images into one
+- `crop`: Crop images using frame detection or border removal
 
 ## Command Usage
 
@@ -134,3 +135,35 @@ Output filenames:
 Apply various image filters:
 
 ```
+
+### Crop Images
+
+Crop images using frame detection or border removal:
+
+```bash
+# Frame mode - Extract photo from contrasting frame/background
+imagewand crop photo.jpg -m frame
+imagewand crop photo.jpg -m frame --margin -2  # More aggressive crop
+imagewand crop photo.jpg -m frame --margin 5   # Add margin
+
+# Border mode - Remove white margins only
+imagewand crop photo.jpg -m border
+imagewand crop photo.jpg -m border -b -2  # More aggressive crop
+imagewand crop photo.jpg -m border -b 5   # Keep more border
+
+# Adjust threshold for content detection (default: 30)
+imagewand crop photo.jpg -m border -t 50  # Higher threshold for darker content
+```
+
+Cropping modes explained:
+- `frame`: Best for photos on contrasting backgrounds (e.g., artwork on black paper)
+  - Use `--margin` to adjust cropping (negative for tighter crop, positive for more margin)
+  - Default margin is -1 for slightly aggressive crop
+  
+- `border`: Best for documents with white margins
+  - Use `-b` to adjust border percentage (negative for tighter crop, positive to keep more border)
+  - Default border is 0 for exact content boundaries
+
+Output filenames:
+- Frame mode: `photo_frame.jpg` or `photo_frame_m2.jpg` (with margin 2)
+- Border mode: `photo_border.jpg` or `photo_border_b5.jpg` (with 5% border)

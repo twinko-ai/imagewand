@@ -10,13 +10,14 @@ import click
 import cv2
 from tqdm import tqdm
 
-from .autofix import autofix, crop_framed_photo, remove_borders
+from .autocrop import autocrop, crop_framed_photo, crop_with_content_detection
 from .config import list_presets, load_presets, save_preset
 from .filters import apply_filter, apply_filters, batch_apply_filters, list_filters
 from .pdf2img import pdf_to_images
 from .resize import resize_image
 from .imageinfo import print_image_info
 from .align import align_image
+from .crop import crop_image
 
 
 def print_execution_time(start_time):
@@ -52,16 +53,20 @@ def version():
 @click.option(
     "-m", "--mode", default="auto", help="Cropping mode: auto, frame, or border"
 )
-@click.option("-b", "--border-percent", default=-1, help="Border percentage for border mode")
-@click.option("--margin", default=-1, help="Margin in pixels for frame mode")
-def autofix(input_path, output, mode, border_percent, margin):
-    """Auto-fix scanned images"""
-    from .autofix import autofix as fix_image
-
-    result = fix_image(
-        input_path, output, mode=mode, border_percent=border_percent, margin=margin
-    )
-    click.echo(f"Processed image saved to: {result}")
+@click.option("-b", "--border-percent", default=-1, type=int, help="Border percentage for border mode")
+@click.option("--margin", default=-1, type=int, help="Margin in pixels for frame mode")
+def autocrop_cmd(input_path, output, mode, border_percent, margin):
+    """Auto-crop scanned images"""
+    from .autocrop import autocrop
+    
+    try:
+        result = autocrop(
+            input_path, output, mode=mode, border_percent=border_percent, margin=margin
+        )
+        click.echo(f"Processed image saved to: {result}")
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        return 1
 
 
 @cli.command()
@@ -102,6 +107,90 @@ def align(input_path, output, method, angle_threshold):
         return 1
 
 
+@cli.command()
+@click.argument("input_path")
+@click.option("-o", "--output", help="Output path")
+@click.option(
+    "-m",
+    "--mode",
+    type=click.Choice(["frame", "border", "auto"]),
+    default="frame",
+    help="Cropping mode: frame, border, or auto",
+)
+@click.option(
+    "-b",
+    "--border-percent",
+    type=int,
+    default=-1,
+    help="Border percentage for border mode",
+)
+@click.option(
+    "--margin",
+    type=int,
+    default=-1,
+    help="Margin in pixels for frame mode",
+)
+@click.option(
+    "-t",
+    "--threshold",
+    type=int,
+    default=30,
+    help="Brightness threshold for content detection",
+)
+def crop(input_path, output, mode, border_percent, margin, threshold):
+    """Crop images using frame detection or border removal"""
+    try:
+        start_time = time.time()
+        
+        # Handle directory input
+        if os.path.isdir(input_path):
+            image_files = []
+            for ext in ["*.jpg", "*.jpeg", "*.png", "*.JPG", "*.JPEG", "*.PNG"]:
+                image_files.extend(glob.glob(os.path.join(input_path, ext)))
+            
+            if not image_files:
+                click.echo(f"No image files found in {input_path}")
+                return 1
+            
+            click.echo(f"Processing {len(image_files)} images...")
+            
+            # Process each image with progress bar
+            with tqdm(total=len(image_files)) as pbar:
+                for i, img_path in enumerate(image_files):
+                    try:
+                        result = crop_image(
+                            img_path, 
+                            None,  # Auto-generate output path for each image
+                            mode=mode,
+                            margin=margin,
+                            border_percent=border_percent,
+                            threshold=threshold
+                        )
+                        # Update progress
+                        pbar.update(1)
+                        pbar.set_description(f"Processed: {os.path.basename(img_path)}")
+                    except Exception as e:
+                        click.echo(f"Error processing {img_path}: {str(e)}", err=True)
+            
+            click.echo(f"Finished processing {len(image_files)} images")
+        else:
+            # Process single image
+            result = crop_image(
+                input_path, 
+                output, 
+                mode=mode,
+                margin=margin,
+                border_percent=border_percent,
+                threshold=threshold
+            )
+            click.echo(f"Cropped image saved to: {result}")
+        
+        print_execution_time(start_time)
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        return 1
+
+
 def main():
     start_time = time.time()
     parser = argparse.ArgumentParser(description="ImageWand - Image manipulation tools")
@@ -125,42 +214,29 @@ def main():
     resize_parser.add_argument("-w", "--width", help="New width", type=int)
     resize_parser.add_argument("--height", help="New height", type=int)
 
-    # Autofix image command
-    autofix_parser = subparsers.add_parser(
-        "autofix", help="Automatically straighten and crop scanned images"
+    # Autocrop command (renamed from autofix)
+    autocrop_parser = subparsers.add_parser(
+        "autocrop", help="Auto-crop scanned images"
     )
-    autofix_parser.add_argument(
-        "image_path", help="Path to the image file or directory of images"
-    )
-    autofix_parser.add_argument(
-        "-o", "--output", help="Output path or directory", default=None
-    )
-    autofix_parser.add_argument(
-        "-b",
-        "--border",
-        help="Percentage of border (-5 to crop more aggressively, positive to keep more border)",
-        type=float,
-        default=-1,
-    )
-    autofix_parser.add_argument(
-        "--margin",
-        help="Margin in pixels (-5 for aggressive crop, positive for more margin)",
-        type=int,
-        default=-1,
-    )
-    autofix_parser.add_argument(
-        "-m",
-        "--mode",
+    autocrop_parser.add_argument("input_path", help="Path to the image file")
+    autocrop_parser.add_argument("-o", "--output", help="Output path", default=None)
+    autocrop_parser.add_argument(
+        "-m", "--mode", 
         choices=["auto", "frame", "border"],
         default="auto",
-        help="Cropping mode: frame (detect framed photo), border (remove margins), or auto",
+        help="Cropping mode: auto, frame, or border"
     )
-    autofix_parser.add_argument(
-        "-t",
-        "--threshold",
+    autocrop_parser.add_argument(
+        "-b", "--border-percent", 
         type=int,
-        default=30,
-        help="Brightness threshold for content detection",
+        default=-1,
+        help="Border percentage for border mode"
+    )
+    autocrop_parser.add_argument(
+        "--margin", 
+        type=int,
+        default=-1,
+        help="Margin in pixels for frame mode"
     )
 
     # Filter command
@@ -231,6 +307,37 @@ def main():
         type=float,
         default=1.0,
         help="Minimum angle to correct (degrees)"
+    )
+
+    # Crop command
+    crop_parser = subparsers.add_parser(
+        "crop", help="Crop images using frame detection or border removal"
+    )
+    crop_parser.add_argument("image_path", help="Path to the image file")
+    crop_parser.add_argument("-o", "--output", help="Output path", default=None)
+    crop_parser.add_argument(
+        "-m", "--mode", 
+        choices=["frame", "border", "auto"],
+        default="frame",
+        help="Cropping mode: frame, border, or auto"
+    )
+    crop_parser.add_argument(
+        "-b", "--border-percent", 
+        type=int,
+        default=-1,
+        help="Border percentage for border mode"
+    )
+    crop_parser.add_argument(
+        "--margin", 
+        type=int,
+        default=-1,
+        help="Margin in pixels for frame mode"
+    )
+    crop_parser.add_argument(
+        "-t", "--threshold", 
+        type=int,
+        default=30,
+        help="Brightness threshold for content detection"
     )
 
     args = parser.parse_args()
@@ -309,25 +416,32 @@ def main():
             print(f"Resized image saved to {output_path}")
             print_execution_time(start_time)
 
-        elif args.command == "autofix":
+        elif args.command == "autocrop":
             try:
-                if args.mode == "frame":
-                    result = crop_framed_photo(
-                        args.image_path, args.output, margin=args.margin
-                    )
-                elif args.mode == "border":
-                    result = remove_borders(
-                        args.image_path, args.output, border_percent=args.border
-                    )
-                else:
-                    result = autofix(
-                        args.image_path, 
-                        args.output, 
+                # Create progress bar
+                with tqdm(total=100, desc="Auto-cropping image") as pbar:
+                    last_progress = 0
+                    
+                    def progress_callback(percent):
+                        nonlocal last_progress
+                        increment = percent - last_progress
+                        if increment > 0:
+                            pbar.update(increment)
+                            last_progress = percent
+                    
+                    result = autocrop(
+                        args.input_path,
+                        args.output,
                         mode=args.mode,
                         margin=args.margin,
-                        border_percent=args.border
+                        border_percent=args.border_percent
                     )
-                print(f"Processed image saved to: {result}")
+                    
+                    # Ensure progress bar reaches 100%
+                    if last_progress < 100:
+                        pbar.update(100 - last_progress)
+                
+                print(f"Auto-cropped image saved to: {result}")
                 print_execution_time(start_time)
             except Exception as e:
                 print(f"Error: {str(e)}")
@@ -556,6 +670,38 @@ def main():
                 print(f"Error: {str(e)}")
                 sys.exit(1)
 
+        elif args.command == "crop":
+            try:
+                # Create progress bar
+                with tqdm(total=100, desc="Cropping image") as pbar:
+                    last_progress = 0
+                    
+                    def progress_callback(percent):
+                        nonlocal last_progress
+                        increment = percent - last_progress
+                        if increment > 0:
+                            pbar.update(increment)
+                            last_progress = percent
+                    
+                    result = crop_image(
+                        args.image_path,
+                        args.output,
+                        mode=args.mode,
+                        margin=args.margin,
+                        border_percent=args.border_percent,
+                        threshold=args.threshold
+                    )
+                    
+                    # Ensure progress bar reaches 100%
+                    if last_progress < 100:
+                        pbar.update(100 - last_progress)
+                
+                print(f"Cropped image saved to: {result}")
+                print_execution_time(start_time)
+            except Exception as e:
+                print(f"Error: {str(e)}")
+                sys.exit(1)
+
         else:
             parser.print_help()
             return 1
@@ -650,11 +796,11 @@ def filter_cmd(input_path, filters, preset, output, save_preset):
     default=30,
     help="Brightness threshold for content detection",
 )
-def crop_cmd(input_path, output, mode, threshold):
-    """Crop image content"""
+def autocrop_cmd(input_path, output, mode, threshold):
+    """Auto-crop image content"""
     try:
-        result = remove_borders(input_path, output, mode, threshold)
-        print(f"Cropped image saved to: {result}")
+        result = autocrop(input_path, output, mode, threshold)
+        print(f"Auto-cropped image saved to: {result}")
     except Exception as e:
         print(f"Error: {str(e)}")
         return 1

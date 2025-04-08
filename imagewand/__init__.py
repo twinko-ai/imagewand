@@ -1,4 +1,4 @@
-from .autofix import autofix
+from .autocrop import autocrop
 from .filters import (
     add_custom_filter,
     apply_filter,
@@ -12,7 +12,7 @@ from .resize import resize_image
 __all__ = [
     "resize_image",
     "pdf_to_images",
-    "autofix",
+    "autocrop",
     "apply_filter",
     "apply_filters",
     "batch_apply_filters",
