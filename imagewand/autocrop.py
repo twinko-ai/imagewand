@@ -43,14 +43,24 @@ def autocrop(
     if mode == "frame":
         result = crop_framed_photo(input_path, output_path, margin=margin)
     elif mode == "border":
-        result = crop_with_content_detection(input_path, output_path, mode="border", 
-                                           threshold=30, border_percent=border_percent)
+        result = crop_with_content_detection(
+            input_path,
+            output_path,
+            mode="border",
+            threshold=30,
+            border_percent=border_percent,
+        )
     else:  # auto mode
         try:
             result = crop_framed_photo(input_path, output_path, margin=margin)
         except ValueError:
-            result = crop_with_content_detection(input_path, output_path, mode="border", 
-                                               threshold=30, border_percent=border_percent)
+            result = crop_with_content_detection(
+                input_path,
+                output_path,
+                mode="border",
+                threshold=30,
+                border_percent=border_percent,
+            )
 
     if result is None:
         raise ValueError("Failed to process image")
@@ -144,86 +154,90 @@ def crop_framed_photo(
 
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    
+
     # Apply Gaussian blur to reduce noise
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    
+
     # Try multiple edge detection approaches
     # First with Canny
     edges = cv2.Canny(blurred, 30, 100)
-    
+
     # Dilate edges to connect them
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
     dilated = cv2.dilate(edges, kernel, iterations=2)
-    
+
     # Find contours
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
+
     # If no good contours, try with adaptive thresholding
-    if not contours or max(cv2.contourArea(c) for c in contours) < img.shape[0] * img.shape[1] * 0.1:
+    if (
+        not contours
+        or max(cv2.contourArea(c) for c in contours) < img.shape[0] * img.shape[1] * 0.1
+    ):
         # Use adaptive thresholding
         binary = cv2.adaptiveThreshold(
-            blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-            cv2.THRESH_BINARY_INV, 11, 2
+            blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
         )
-        
+
         # Clean up with morphology
         binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
         binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
-        
+
         # Find contours again
-        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
+        contours, _ = cv2.findContours(
+            binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+
     if not contours:
         raise ValueError("No frame detected in the image")
-    
+
     # Filter contours by area - we want the largest ones that aren't the entire image
     min_area = img.shape[0] * img.shape[1] * 0.05  # Lower threshold: 5% of image
     max_area = img.shape[0] * img.shape[1] * 0.98  # Higher threshold: 98% of image
-    
+
     valid_contours = [c for c in contours if min_area < cv2.contourArea(c) < max_area]
-    
+
     if not valid_contours:
         # If no valid contours, try with the largest one
         largest_contour = max(contours, key=cv2.contourArea)
         valid_contours = [largest_contour]
-    
+
     # Sort contours by area (largest first)
     valid_contours = sorted(valid_contours, key=cv2.contourArea, reverse=True)
-    
+
     # Try to find a rectangular contour first
     best_contour = None
-    best_rect_score = float('inf')
-    
+    best_rect_score = float("inf")
+
     for contour in valid_contours[:5]:  # Check top 5 largest contours
         # Approximate the contour to simplify it
         epsilon = 0.02 * cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, epsilon, True)
-        
+
         # If it has 4 vertices, it's likely a rectangle
         if len(approx) == 4:
             best_contour = contour
             break
-            
+
         # Get bounding rectangle
         x, y, w, h = cv2.boundingRect(contour)
-        
+
         # Calculate how rectangular the contour is
         rect_area = w * h
         contour_area = cv2.contourArea(contour)
         rect_score = abs(1 - (contour_area / rect_area))
-        
+
         # Check if it's more rectangular than previous best
         if rect_score < best_rect_score:
             best_rect_score = rect_score
             best_contour = contour
-    
+
     if best_contour is None:
         best_contour = valid_contours[0]  # Use largest if no good rectangle found
-    
+
     # Get bounding rectangle of best contour
     x, y, w, h = cv2.boundingRect(best_contour)
-    
+
     # Apply margin
     if margin >= 0:
         # Add margin (positive value)
@@ -238,10 +252,10 @@ def crop_framed_photo(
         y = min(y + margin, y + h - 1)
         w = max(w - 2 * margin, 1)
         h = max(h - 2 * margin, 1)
-    
+
     # Crop the image
-    cropped = img[y:y+h, x:x+w]
-    
+    cropped = img[y : y + h, x : x + w]
+
     # Create output path if not specified
     if output_path is None:
         base, ext = os.path.splitext(image_path)
@@ -250,7 +264,7 @@ def crop_framed_photo(
         else:
             suffix = "_frame"
         output_path = f"{base}{suffix}{ext}"
-    
+
     # Save result
     cv2.imwrite(output_path, cropped)
     return output_path
@@ -285,22 +299,21 @@ def crop_with_content_detection(
         img = cv2.imread(image_path)
         if img is None:
             raise ValueError(f"Could not load image: {image_path}")
-            
+
         # Convert to grayscale
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        
+
         # Try adaptive thresholding instead of simple thresholding
         # This works better for images with varying brightness
         binary = cv2.adaptiveThreshold(
-            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-            cv2.THRESH_BINARY_INV, 11, 2
+            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
         )
-        
+
         # Apply morphological operations to clean up the binary image
         kernel = np.ones((3, 3), np.uint8)
         binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
         binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
-        
+
         # Find the bounding box of the content
         points = cv2.findNonZero(binary)
         if points is None:
@@ -309,24 +322,24 @@ def crop_with_content_detection(
             points = cv2.findNonZero(binary)
             if points is None:
                 raise ValueError("No content found in the image")
-            
+
         x, y, w, h = cv2.boundingRect(points)
-        
+
         # Apply border percentage if specified
         if border_percent != -1:
             # Positive border_percent means keep more border
             # Negative border_percent means more aggressive crop
             border_x = int(w * border_percent / 100)
             border_y = int(h * border_percent / 100)
-            
+
             x = max(0, x - border_x)
             y = max(0, y - border_y)
             w = min(img.shape[1] - x, w + 2 * border_x)
             h = min(img.shape[0] - y, h + 2 * border_y)
-        
+
         # Crop the image
-        cropped = img[y:y+h, x:x+w]
-        
+        cropped = img[y : y + h, x : x + w]
+
         # Create output path if not specified
         if output_path is None:
             base, ext = os.path.splitext(image_path)
@@ -335,7 +348,7 @@ def crop_with_content_detection(
             else:
                 suffix = "_border"
             output_path = f"{base}{suffix}{ext}"
-        
+
         # Save result
         cv2.imwrite(output_path, cropped)
         return output_path
@@ -354,10 +367,15 @@ def crop_with_content_detection(
                 temp_output = None
             else:
                 temp_output = output_path
-                
-            result = crop_with_content_detection(image_path, temp_output, mode="border", 
-                                               threshold=threshold, border_percent=border_percent)
-                
+
+            result = crop_with_content_detection(
+                image_path,
+                temp_output,
+                mode="border",
+                threshold=threshold,
+                border_percent=border_percent,
+            )
+
             if output_path is None:
                 base, ext = os.path.splitext(image_path)
                 suffix = (

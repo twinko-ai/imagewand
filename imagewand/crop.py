@@ -13,11 +13,11 @@ def crop_image(
     mode: str = "frame",
     margin: int = -1,
     border_percent: int = -1,
-    threshold: int = 30
+    threshold: int = 30,
 ) -> str:
     """
     Crop an image using either frame detection or border removal.
-    
+
     Args:
         input_path: Path to input image
         output_path: Path to output image (optional)
@@ -25,13 +25,13 @@ def crop_image(
         margin: Margin in pixels for frame mode (negative for tighter crop)
         border_percent: Border percentage for border mode
         threshold: Brightness threshold for content detection (0-255)
-        
+
     Returns:
         Path to cropped image
     """
     if mode not in ["frame", "border", "auto"]:
         raise ValueError(f"Invalid mode: {mode}. Must be 'frame', 'border', or 'auto'")
-    
+
     # Create default output path if not specified
     if output_path is None:
         base, ext = os.path.splitext(input_path)
@@ -42,16 +42,18 @@ def crop_image(
         else:  # auto mode
             suffix = "_auto"
         output_path = f"{base}{suffix}{ext}"
-    
+
     img = cv2.imread(input_path)
     if img is None:
         raise ValueError(f"Failed to load image: {input_path}")
-    
+
     # Call the appropriate cropping function
     if mode == "frame":
         result = crop_framed_photo(input_path, output_path, margin=margin)
     elif mode == "border":
-        result = crop_with_content_detection(input_path, output_path, border_percent=border_percent)
+        result = crop_with_content_detection(
+            input_path, output_path, border_percent=border_percent
+        )
     else:  # auto mode
         try:
             result = crop_framed_photo(input_path, output_path, margin=margin)
@@ -62,7 +64,9 @@ def crop_image(
                 return new_path
             return result
         except ValueError:
-            result = crop_with_content_detection(input_path, output_path, border_percent=border_percent)
+            result = crop_with_content_detection(
+                input_path, output_path, border_percent=border_percent
+            )
             if output_path is None:
                 base, ext = os.path.splitext(input_path)
                 suffix = (
@@ -73,10 +77,10 @@ def crop_image(
                 new_path = f"{base}{suffix}{ext}"
                 os.rename(result, new_path)
                 return new_path
-    
+
     if result is None:
         raise ValueError("Failed to process image")
-    
+
     return result
 
 
@@ -314,13 +318,13 @@ def crop_with_content_detection(
 ) -> str:
     """
     Remove white borders from an image.
-    
+
     Args:
         image_path: Path to input image
         output_path: Path to output image (optional)
         border_percent: Percentage of border to keep
         threshold: Brightness threshold for content detection (0-255)
-        
+
     Returns:
         Path to cropped image
     """
@@ -328,26 +332,26 @@ def crop_with_content_detection(
     img = cv2.imread(image_path)
     if img is None:
         raise ValueError(f"Could not read image: {image_path}")
-    
+
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    
+
     # Threshold the image to get content vs background
     _, binary = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY_INV)
-    
+
     # Find the bounding box of the content
     points = cv2.findNonZero(binary)
     if points is None:
         raise ValueError("No content found in the image")
-    
+
     x, y, w, h = cv2.boundingRect(points)
-    
+
     # Apply border percentage
     if border_percent != -1:
         # Calculate border size based on the original dimensions
         border_x = int(img.shape[1] * (abs(border_percent) / 100))
         border_y = int(img.shape[0] * (abs(border_percent) / 100))
-        
+
         # Apply border (add or subtract based on sign)
         if border_percent > 0:
             # Keep more border
@@ -361,16 +365,16 @@ def crop_with_content_detection(
             y = min(img.shape[0] - 1, y + border_y)
             w = max(1, w - 2 * border_x)
             h = max(1, h - 2 * border_y)
-    
+
     # Ensure we don't exceed image boundaries
     x = max(0, x)
     y = max(0, y)
     w = min(img.shape[1] - x, w)
     h = min(img.shape[0] - y, h)
-    
+
     # Crop the image
-    cropped = img[y:y+h, x:x+w]
-    
+    cropped = img[y : y + h, x : x + w]
+
     # Create output path if not specified
     if output_path is None:
         base, ext = os.path.splitext(image_path)
@@ -379,23 +383,22 @@ def crop_with_content_detection(
         else:
             suffix = "_border"
         output_path = f"{base}{suffix}{ext}"
-    
+
     # Save result
     cv2.imwrite(output_path, cropped)
     return output_path
 
 
 def detect_content_area(
-    image_path: str, 
-    threshold: int = 30
+    image_path: str, threshold: int = 30
 ) -> Tuple[int, int, int, int]:
     """
     Detect the content area of an image.
-    
+
     Args:
         image_path: Path to input image
         threshold: Brightness threshold for content detection (0-255)
-        
+
     Returns:
         Tuple of (x, y, width, height) of the content area
     """
@@ -403,16 +406,16 @@ def detect_content_area(
     img = cv2.imread(image_path)
     if img is None:
         raise ValueError(f"Could not read image: {image_path}")
-    
+
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    
+
     # Threshold the image to get content vs background
     _, binary = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY_INV)
-    
+
     # Find the bounding box of the content
     points = cv2.findNonZero(binary)
     if points is None:
         raise ValueError("No content found in the image")
-    
-    return cv2.boundingRect(points) 
+
+    return cv2.boundingRect(points)

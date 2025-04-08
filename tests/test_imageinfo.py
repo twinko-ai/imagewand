@@ -36,7 +36,7 @@ class TestImageInfo:
     def test_get_image_info_jpg(self, sample_jpg):
         """Test getting information from the octopus.jpg image."""
         info = get_image_info(sample_jpg)
-        
+
         # Check basic file information
         assert info["filename"] == "octopus.jpg"
         assert info["path"] == str(Path(sample_jpg).absolute())
@@ -44,14 +44,14 @@ class TestImageInfo:
         assert "file_size_human" in info
         assert "file_modified" in info
         assert info["file_extension"] == ".jpg"
-        
+
         # Check image properties
         assert info["width"] > 0
         assert info["height"] > 0
         assert info["format"] == "JPEG"
         assert info["mode"] == "RGB"
         assert "24-bit" in info["color_depth"]
-        
+
         # Check color information
         assert "red_min" in info
         assert "red_max" in info
@@ -74,13 +74,13 @@ class TestImageInfo:
         """Test the print_image_info function."""
         print_image_info(sample_jpg, verbose=False)
         captured = capsys.readouterr()
-        
+
         # Check that output contains expected information
         assert "=== IMAGE INFORMATION ===" in captured.out
         assert "File: octopus.jpg" in captured.out
         assert "Dimensions:" in captured.out
         assert "Color Mode:" in captured.out
-        
+
         # Check color information is printed
         assert "=== COLOR INFORMATION ===" in captured.out
         assert "Average Brightness:" in captured.out
@@ -93,10 +93,10 @@ class TestImageInfo:
         """Test the print_image_info function with verbose flag."""
         print_image_info(sample_jpg, verbose=True)
         captured = capsys.readouterr()
-        
+
         # Basic info should be present
         assert "=== IMAGE INFORMATION ===" in captured.out
-        
+
         # EXIF section might be present depending on the image
         # But we shouldn't get an error
         assert "Error:" not in captured.out
@@ -110,27 +110,29 @@ class TestImageInfo:
             assert "file_size" in info
         except Exception as e:
             # If it fails, it should be a controlled error
-            assert "not a valid image file" in str(e) or "cannot identify image file" in str(e)
+            assert "not a valid image file" in str(
+                e
+            ) or "cannot identify image file" in str(e)
 
     def test_cli_command(self, sample_jpg, monkeypatch):
         """Test the CLI command for image info using monkeypatch."""
         import sys
         from io import StringIO
-        
+
         # Capture stdout
         captured_output = StringIO()
-        monkeypatch.setattr(sys, 'stdout', captured_output)
-        
+        monkeypatch.setattr(sys, "stdout", captured_output)
+
         # Import the CLI function
         from imagewand.cli import main
-        
+
         # Save original argv
         original_argv = sys.argv.copy()
-        
+
         try:
             # Set up argv for the command
             sys.argv = ["imagewand", "info", sample_jpg]
-            
+
             # Run the command (should not raise an exception)
             try:
                 main()
@@ -143,7 +145,7 @@ class TestImageInfo:
                 assert e.code == 0
             except Exception as e:
                 pytest.fail(f"CLI command raised an exception: {e}")
-                
+
         finally:
             # Restore original argv
-            sys.argv = original_argv 
+            sys.argv = original_argv

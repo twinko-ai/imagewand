@@ -15,12 +15,12 @@ def automerge(
 ) -> str:
     """
     Automatically merge overlapping images into a panorama.
-    
+
     Args:
         input_paths: List of image paths, directory, or glob pattern
         output_path: Path to save merged result (optional)
         debug: Enable debug mode to show intermediate results
-        
+
     Returns:
         Path to the merged output image
     """
@@ -32,38 +32,38 @@ def automerge(
             for ext in ["*.jpg", "*.jpeg", "*.png", "*.JPG", "*.JPEG", "*.PNG"]:
                 image_files.extend(glob.glob(os.path.join(input_paths, ext)))
             input_paths = sorted(image_files)
-        elif '*' in input_paths:
+        elif "*" in input_paths:
             # Glob pattern input
             input_paths = sorted(glob.glob(input_paths))
         else:
             # Single file input
             input_paths = [input_paths]
-    
+
     if len(input_paths) < 2:
         raise ValueError("At least two images are required for merging")
-    
+
     # Create output path if not specified
     if output_path is None:
         # Use the directory of the first image
         base_dir = os.path.dirname(input_paths[0])
         if not base_dir:
-            base_dir = '.'
+            base_dir = "."
         output_path = os.path.join(base_dir, "merged_result.jpg")
-    
+
     # Load images
     images = []
     for path in tqdm(input_paths, desc="Loading images"):
         img = cv2.imread(path)
         if img is not None:
             images.append(img)
-    
+
     if len(images) < 2:
         raise ValueError("Could not load at least two valid images")
-    
+
     # Create AutoMerge instance and merge images
     merger = AutoMerge(debug=debug)
     result = merger.merge_images(images)
-    
+
     # Save the result
     cv2.imwrite(output_path, result)
     return output_path

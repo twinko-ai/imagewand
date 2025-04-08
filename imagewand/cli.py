@@ -53,12 +53,18 @@ def version():
 @click.option(
     "-m", "--mode", default="auto", help="Cropping mode: auto, frame, or border"
 )
-@click.option("-b", "--border-percent", default=-1, type=int, help="Border percentage for border mode")
+@click.option(
+    "-b",
+    "--border-percent",
+    default=-1,
+    type=int,
+    help="Border percentage for border mode",
+)
 @click.option("--margin", default=-1, type=int, help="Margin in pixels for frame mode")
 def autocrop_cmd(input_path, output, mode, border_percent, margin):
     """Auto-crop scanned images"""
     from .autocrop import autocrop
-    
+
     try:
         result = autocrop(
             input_path, output, mode=mode, border_percent=border_percent, margin=margin
@@ -86,20 +92,27 @@ def filter(input_path, filters, output):
 @click.argument("input_path")
 @click.option("-o", "--output", help="Output path")
 @click.option(
-    "-m", "--method", 
-    default="auto", 
+    "-m",
+    "--method",
+    default="auto",
     type=click.Choice(["auto", "hough", "contour", "center"]),
-    help="Alignment method to use"
+    help="Alignment method to use",
 )
-@click.option("-a", "--angle-threshold", default=1.0, type=float, help="Minimum angle to correct (degrees)")
+@click.option(
+    "-a",
+    "--angle-threshold",
+    default=1.0,
+    type=float,
+    help="Minimum angle to correct (degrees)",
+)
 def align(input_path, output, method, angle_threshold):
     """Automatically align tilted images to be horizontal/vertical"""
     try:
         result = align_image(
-            input_path, 
+            input_path,
             output_path=output,
             method=method,
-            angle_threshold=angle_threshold
+            angle_threshold=angle_threshold,
         )
         click.echo(f"Aligned image saved to: {result}")
     except Exception as e:
@@ -141,50 +154,50 @@ def crop(input_path, output, mode, border_percent, margin, threshold):
     """Crop images using frame detection or border removal"""
     try:
         start_time = time.time()
-        
+
         # Handle directory input
         if os.path.isdir(input_path):
             image_files = []
             for ext in ["*.jpg", "*.jpeg", "*.png", "*.JPG", "*.JPEG", "*.PNG"]:
                 image_files.extend(glob.glob(os.path.join(input_path, ext)))
-            
+
             if not image_files:
                 click.echo(f"No image files found in {input_path}")
                 return 1
-            
+
             click.echo(f"Processing {len(image_files)} images...")
-            
+
             # Process each image with progress bar
             with tqdm(total=len(image_files)) as pbar:
                 for i, img_path in enumerate(image_files):
                     try:
                         result = crop_image(
-                            img_path, 
+                            img_path,
                             None,  # Auto-generate output path for each image
                             mode=mode,
                             margin=margin,
                             border_percent=border_percent,
-                            threshold=threshold
+                            threshold=threshold,
                         )
                         # Update progress
                         pbar.update(1)
                         pbar.set_description(f"Processed: {os.path.basename(img_path)}")
                     except Exception as e:
                         click.echo(f"Error processing {img_path}: {str(e)}", err=True)
-            
+
             click.echo(f"Finished processing {len(image_files)} images")
         else:
             # Process single image
             result = crop_image(
-                input_path, 
-                output, 
+                input_path,
+                output,
                 mode=mode,
                 margin=margin,
                 border_percent=border_percent,
-                threshold=threshold
+                threshold=threshold,
             )
             click.echo(f"Cropped image saved to: {result}")
-        
+
         print_execution_time(start_time)
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
@@ -215,28 +228,25 @@ def main():
     resize_parser.add_argument("--height", help="New height", type=int)
 
     # Autocrop command (renamed from autofix)
-    autocrop_parser = subparsers.add_parser(
-        "autocrop", help="Auto-crop scanned images"
-    )
+    autocrop_parser = subparsers.add_parser("autocrop", help="Auto-crop scanned images")
     autocrop_parser.add_argument("input_path", help="Path to the image file")
     autocrop_parser.add_argument("-o", "--output", help="Output path", default=None)
     autocrop_parser.add_argument(
-        "-m", "--mode", 
+        "-m",
+        "--mode",
         choices=["auto", "frame", "border"],
         default="auto",
-        help="Cropping mode: auto, frame, or border"
+        help="Cropping mode: auto, frame, or border",
     )
     autocrop_parser.add_argument(
-        "-b", "--border-percent", 
+        "-b",
+        "--border-percent",
         type=int,
         default=-1,
-        help="Border percentage for border mode"
+        help="Border percentage for border mode",
     )
     autocrop_parser.add_argument(
-        "--margin", 
-        type=int,
-        default=-1,
-        help="Margin in pixels for frame mode"
+        "--margin", type=int, default=-1, help="Margin in pixels for frame mode"
     )
 
     # Filter command
@@ -270,7 +280,10 @@ def main():
     info_parser = subparsers.add_parser("info", help="Display image information")
     info_parser.add_argument("image_path", help="Path to the image file")
     info_parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Show detailed information including EXIF data"
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show detailed information including EXIF data",
     )
 
     # Align command
@@ -280,16 +293,16 @@ def main():
     align_parser.add_argument("image_path", help="Path to the image file")
     align_parser.add_argument("-o", "--output", help="Output path", default=None)
     align_parser.add_argument(
-        "--method", 
+        "--method",
         choices=["auto", "hough", "contour", "center"],
         default="auto",
-        help="Alignment method to use"
+        help="Alignment method to use",
     )
     align_parser.add_argument(
-        "--angle-threshold", 
+        "--angle-threshold",
         type=float,
         default=1.0,
-        help="Minimum angle to correct (degrees)"
+        help="Minimum angle to correct (degrees)",
     )
 
     # Crop command
@@ -299,28 +312,28 @@ def main():
     crop_parser.add_argument("image_path", help="Path to the image file")
     crop_parser.add_argument("-o", "--output", help="Output path", default=None)
     crop_parser.add_argument(
-        "-m", "--mode", 
+        "-m",
+        "--mode",
         choices=["frame", "border", "auto"],
         default="frame",
-        help="Cropping mode: frame, border, or auto"
+        help="Cropping mode: frame, border, or auto",
     )
     crop_parser.add_argument(
-        "-b", "--border-percent", 
+        "-b",
+        "--border-percent",
         type=int,
         default=-1,
-        help="Border percentage for border mode"
+        help="Border percentage for border mode",
     )
     crop_parser.add_argument(
-        "--margin", 
-        type=int,
-        default=-1,
-        help="Margin in pixels for frame mode"
+        "--margin", type=int, default=-1, help="Margin in pixels for frame mode"
     )
     crop_parser.add_argument(
-        "-t", "--threshold", 
+        "-t",
+        "--threshold",
         type=int,
         default=30,
-        help="Brightness threshold for content detection"
+        help="Brightness threshold for content detection",
     )
 
     args = parser.parse_args()
@@ -404,26 +417,26 @@ def main():
                 # Create progress bar
                 with tqdm(total=100, desc="Auto-cropping image") as pbar:
                     last_progress = 0
-                    
+
                     def progress_callback(percent):
                         nonlocal last_progress
                         increment = percent - last_progress
                         if increment > 0:
                             pbar.update(increment)
                             last_progress = percent
-                    
+
                     result = autocrop(
                         args.input_path,
                         args.output,
                         mode=args.mode,
                         margin=args.margin,
-                        border_percent=args.border_percent
+                        border_percent=args.border_percent,
                     )
-                    
+
                     # Ensure progress bar reaches 100%
                     if last_progress < 100:
                         pbar.update(100 - last_progress)
-                
+
                 print(f"Auto-cropped image saved to: {result}")
                 print_execution_time(start_time)
             except Exception as e:
@@ -540,7 +553,7 @@ def main():
         elif args.command == "merge":
             # Create default output path if not specified
             if args.output is None:
-                if os.path.isdir(args.input[0]) or '*' in args.input[0]:
+                if os.path.isdir(args.input[0]) or "*" in args.input[0]:
                     # For directory input, use directory name
                     dirname = os.path.basename(os.path.normpath(args.input[0]))
                     output_path = os.path.join(
@@ -549,9 +562,9 @@ def main():
                 else:
                     # For single file input, use file name
                     input_dir = os.path.dirname(args.input[0])
-                    input_basename = os.path.splitext(
-                        os.path.basename(args.input[0])
-                    )[0]
+                    input_basename = os.path.splitext(os.path.basename(args.input[0]))[
+                        0
+                    ]
                     output_path = os.path.join(
                         input_dir, f"merged_{input_basename}.jpg"
                     )
@@ -566,13 +579,11 @@ def main():
             # Get list of images to process
             image_paths = []
             for path in args.input:
-                if os.path.isdir(path) or '*' in path:
+                if os.path.isdir(path) or "*" in path:
                     # Handle directory input
                     patterns = ["*.jpg", "*.jpeg", "*.png", "*.tiff", "*.bmp"]
                     for pattern in patterns:
-                        image_paths.extend(
-                            glob.glob(os.path.join(path, pattern))
-                        )
+                        image_paths.extend(glob.glob(os.path.join(path, pattern)))
                 else:
                     # Single file input
                     if not os.path.exists(path):
@@ -622,25 +633,25 @@ def main():
                 # Create progress bar
                 with tqdm(total=100, desc="Aligning image") as pbar:
                     last_progress = 0
-                    
+
                     def progress_callback(percent):
                         nonlocal last_progress
                         increment = percent - last_progress
                         if increment > 0:
                             pbar.update(increment)
                             last_progress = percent
-                    
+
                     result = align_image(
                         args.image_path,
                         output_path=args.output,
                         method=args.method,
-                        angle_threshold=args.angle_threshold
+                        angle_threshold=args.angle_threshold,
                     )
-                    
+
                     # Ensure progress bar reaches 100%
                     if last_progress < 100:
                         pbar.update(100 - last_progress)
-                
+
                 print(f"Aligned image saved to: {result}")
                 print_execution_time(start_time)
             except Exception as e:
@@ -652,27 +663,27 @@ def main():
                 # Create progress bar
                 with tqdm(total=100, desc="Cropping image") as pbar:
                     last_progress = 0
-                    
+
                     def progress_callback(percent):
                         nonlocal last_progress
                         increment = percent - last_progress
                         if increment > 0:
                             pbar.update(increment)
                             last_progress = percent
-                    
+
                     result = crop_image(
                         args.image_path,
                         args.output,
                         mode=args.mode,
                         margin=args.margin,
                         border_percent=args.border_percent,
-                        threshold=args.threshold
+                        threshold=args.threshold,
                     )
-                    
+
                     # Ensure progress bar reaches 100%
                     if last_progress < 100:
                         pbar.update(100 - last_progress)
-                
+
                 print(f"Cropped image saved to: {result}")
                 print_execution_time(start_time)
             except Exception as e:
@@ -793,26 +804,22 @@ def add_merge_command(subparsers):
         nargs="+",  # Accept multiple arguments
         help="Input directory or image files",
     )
-    parser.add_argument(
-        "-o", "--output", help="Output file path", default=None
-    )
-    parser.add_argument(
-        "--debug", action="store_true", help="Enable debug mode"
-    )
+    parser.add_argument("-o", "--output", help="Output file path", default=None)
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     parser.set_defaults(func=merge_command)
 
 
 def merge_command(args):
     """Handle merge command"""
     from imagewand.automerge import automerge
-    
+
     # If there's only one input and it's a directory or glob pattern, use it directly
-    if len(args.input) == 1 and (os.path.isdir(args.input[0]) or '*' in args.input[0]):
+    if len(args.input) == 1 and (os.path.isdir(args.input[0]) or "*" in args.input[0]):
         input_path = args.input[0]
     else:
         # Otherwise, treat the inputs as a list of image files
         input_path = args.input
-    
+
     try:
         result = automerge(input_path, args.output, debug=args.debug)
         print(f"Merged image saved to: {result}")
