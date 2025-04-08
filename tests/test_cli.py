@@ -101,16 +101,27 @@ def test_cli_align_command(sample_image):
             assert "Aligned image saved to" in result.output
 
 
-def test_cli_crop_command(sample_image):
-    """Test the crop command with a real image."""
+def test_cli_autocrop_command():
+    """Test the autocrop command in the CLI."""
     runner = CliRunner()
     with runner.isolated_filesystem():
-        with patch(
-            "imagewand.crop.crop_image", return_value=f"{sample_image}_cropped.jpg"
-        ):
-            result = runner.invoke(cli, ["crop", sample_image])
-            assert result.exit_code == 0
-            assert "Cropped image saved to" in result.output
+        # Create a test image
+        test_img = create_test_image("test.jpg")
+        
+        # Test basic autocrop command
+        result = runner.invoke(cli, ["autocrop", test_img])
+        assert result.exit_code == 0
+        assert "Cropped image saved" in result.output
+        
+        # Test with frame mode
+        result = runner.invoke(cli, ["autocrop", test_img, "-m", "frame"])
+        assert result.exit_code == 0
+        assert "Cropped image saved" in result.output
+        
+        # Test with border mode
+        result = runner.invoke(cli, ["autocrop", test_img, "-m", "border"])
+        assert result.exit_code == 0
+        assert "Cropped image saved" in result.output
 
 
 # Tests for argparse interface
@@ -201,18 +212,6 @@ def test_main_filter(sample_image):
         )
 
 
-def test_main_crop(sample_image):
-    """Test the crop command in main function."""
-    with patch("sys.argv", ["imagewand", "crop", sample_image]), patch(
-        "imagewand.crop.crop_image", return_value=f"{sample_image}_cropped.jpg"
-    ), patch("time.time", return_value=0), patch("builtins.print") as mock_print:
-        main()
-        # Check that the success message was printed
-        assert any(
-            "Cropped image saved to" in str(call) for call in mock_print.call_args_list
-        )
-
-
 def test_main_align(sample_image):
     """Test the align command in main function."""
     with patch("sys.argv", ["imagewand", "align", sample_image]), patch(
@@ -270,3 +269,17 @@ def test_main_error_handling():
                 break
 
         assert error_printed, "No error message was printed"
+
+
+def test_main_autocrop():
+    """Test the autocrop command in the main function."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create a test image
+        test_img = os.path.join(temp_dir, "test.jpg")
+        create_test_image(test_img)
+        
+        # Test autocrop command
+        with patch.object(sys, 'argv', ['imagewand', 'autocrop', test_img]):
+            with patch('builtins.print') as mock_print:
+                main()
+                mock_print.assert_any_call(f"Cropped image saved to: {temp_dir}/test_auto.jpg")
