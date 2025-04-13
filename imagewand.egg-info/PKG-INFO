@@ -3,7 +3,7 @@ Name: imagewand
 Version: 0.1.1
 Summary: A Python package for image resizing and PDF to image conversion
 Author-email: Tengfei Yin <tengfei@twinko.ai>
-License-Expression: Apache-2.0
+License: Apache-2.0
 Project-URL: Homepage, https://github.com/twinko-ai/imagewand
 Project-URL: Repository, https://github.com/twinko-ai/imagewand
 Project-URL: Documentation, https://github.com/twinko-ai/imagewand#readme
@@ -18,6 +18,7 @@ Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Topic :: Multimedia :: Graphics
 Classifier: Topic :: Utilities
+Classifier: License :: OSI Approved :: Apache Software License
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
@@ -31,6 +32,8 @@ Requires-Dist: numpy
 Requires-Dist: click
 Requires-Dist: black>=24.8.0
 Requires-Dist: isort>=5.12.0
+Requires-Dist: rembg>=2.0.50
+Requires-Dist: onnxruntime
 Dynamic: license-file
 
 # ImageWand
@@ -63,6 +66,7 @@ ImageWand provides several commands for different image manipulation tasks:
 - `filter`: Apply various filters to images
 - `merge`: Merge multiple scanned images into one
 - `autocrop`: Automatically crop images using frame detection or border removal
+- `rmbg`: Remove backgrounds from images using AI
 - `info`: Display detailed information about images
 
 ## Command Usage
@@ -217,6 +221,46 @@ Output filenames:
 - Auto mode: `photo_auto.jpg`, `photo_auto_frame.jpg`, or `photo_auto_border.jpg`
 - Frame mode: `photo_frame.jpg` or `photo_frame_m10.jpg` (with margin 10)
 - Border mode: `photo_border.jpg` or `photo_border_b10.jpg` (with 10% border)
+
+### Remove Backgrounds
+
+Remove backgrounds from images using state-of-the-art AI models:
+
+```bash
+# Basic usage - single image
+imagewand rmbg input.jpg
+
+# Specify output path
+imagewand rmbg input.jpg -o output.png
+
+# Process all images in a directory
+imagewand rmbg images/ -b
+
+# Save to a specific output directory
+imagewand rmbg images/ -b -o processed/
+
+# Use alpha matting for improved edges
+imagewand rmbg input.jpg --alpha-matting
+
+# Use a different model
+imagewand rmbg input.jpg --model u2net_human_seg  # Optimized for people
+```
+
+Available models:
+- `u2net` (default): General-purpose background removal
+- `u2netp`: Smaller, faster model but less accurate
+- `u2net_human_seg`: Optimized for human subjects
+- `silueta`: Alternative model with different characteristics
+- `isnet-general-use`: Another high-quality general-purpose model
+
+Alpha matting parameters:
+- `--alpha-matting`: Enable alpha matting for improved edges
+- `--alpha-matting-foreground-threshold`: Foreground threshold (default: 240)
+- `--alpha-matting-background-threshold`: Background threshold (default: 10)
+- `--alpha-matting-erode-size`: Erode size (default: 10)
+
+Output filenames:
+- Default: `input_nobg.png` (always outputs PNG to preserve transparency)
 
 ### Image Information
 

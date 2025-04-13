@@ -1,3 +1,12 @@
+"""
+ImageWand - Image processing toolkit
+"""
+
+import warnings
+
+# Suppress Numba warnings about FNV hashing
+warnings.filterwarnings("ignore", message="FNV hashing is not implemented in Numba")
+
 from .autocrop import autocrop
 from .filters import (
     add_custom_filter,
@@ -7,6 +16,7 @@ from .filters import (
     list_filters,
 )
 from .pdf2img import pdf_to_images
+from .rmbg import remove_background, batch_remove_background
 from .resize import resize_image
 
 __all__ = [
@@ -18,4 +28,6 @@ __all__ = [
     "batch_apply_filters",
     "list_filters",
     "add_custom_filter",
+    "remove_background",
+    "batch_remove_background",
 ]

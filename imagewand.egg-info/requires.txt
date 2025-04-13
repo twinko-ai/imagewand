@@ -8,3 +8,5 @@ numpy
 click
 black>=24.8.0
 isort>=5.12.0
+rembg>=2.0.50
+onnxruntime

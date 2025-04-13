@@ -11,6 +11,7 @@ imagewand/filters.py
 imagewand/imageinfo.py
 imagewand/pdf2img.py
 imagewand/resize.py
+imagewand/rmbg.py
 imagewand.egg-info/PKG-INFO
 imagewand.egg-info/SOURCES.txt
 imagewand.egg-info/dependency_links.txt
@@ -31,3 +32,4 @@ tests/test_filters.py
 tests/test_imageinfo.py
 tests/test_pdf2img.py
 tests/test_resize.py
+tests/test_rmbg.py

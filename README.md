@@ -28,6 +28,9 @@ ImageWand provides several commands for different image manipulation tasks:
 - `filter`: Apply various filters to images
 - `merge`: Merge multiple scanned images into one
 - `autocrop`: Automatically crop images using frame detection or border removal
+- `rmbg`: Remove backgrounds from images using AI
+- `workflow`: Execute a saved workflow on an image
+- `create-workflow`: Create a new workflow by specifying steps
 - `info`: Display detailed information about images
 
 ## Command Usage
@@ -182,6 +185,101 @@ Output filenames:
 - Auto mode: `photo_auto.jpg`, `photo_auto_frame.jpg`, or `photo_auto_border.jpg`
 - Frame mode: `photo_frame.jpg` or `photo_frame_m10.jpg` (with margin 10)
 - Border mode: `photo_border.jpg` or `photo_border_b10.jpg` (with 10% border)
+
+### Remove Backgrounds
+
+Remove backgrounds from images using state-of-the-art AI models:
+
+```bash
+# Basic usage - single image
+imagewand rmbg input.jpg
+
+# Specify output path
+imagewand rmbg input.jpg -o output.png
+
+# Process all images in a directory
+imagewand rmbg images/ -b
+
+# Save to a specific output directory
+imagewand rmbg images/ -b -o processed/
+
+# Use alpha matting for improved edges
+imagewand rmbg input.jpg --alpha-matting
+
+# Use alpha matting with custom parameters
+imagewand rmbg input.jpg --alpha-matting --alpha-matting-foreground-threshold 220 --alpha-matting-background-threshold 5 --alpha-matting-erode-size 15
+
+# Use a different model
+imagewand rmbg input.jpg --model u2net_human_seg  # Optimized for people
+
+# Save current settings as a preset
+imagewand rmbg input.jpg --model isnet-general-use --alpha-matting --alpha-matting-foreground-threshold 200 --alpha-matting-background-threshold 5 --alpha-matting-erode-size 20 --save-preset "my_portrait_settings"
+
+# Use a saved preset
+imagewand rmbg input.jpg --preset my_portrait_settings
+
+# List all available presets
+imagewand rmbg --list-presets
+```
+
+Available models:
+- `u2net` (default): General-purpose background removal
+- `u2netp`: Smaller, faster model but less accurate
+- `u2net_human_seg`: Optimized for human subjects
+- `silueta`: Alternative model with different characteristics
+- `isnet-general-use`: Another high-quality general-purpose model
+
+Alpha matting parameters:
+- `--alpha-matting`: Enable alpha matting for improved edges
+- `--alpha-matting-foreground-threshold`: Foreground threshold (default: 240)
+- `--alpha-matting-background-threshold`: Background threshold (default: 10)
+- `--alpha-matting-erode-size`: Erode size (default: 10)
+
+Presets:
+- Save your favorite settings with `--save-preset "name"`
+- Use saved settings with `--preset name`
+- List all available presets with `--list-presets`
+
+Output filenames include information about the parameters used:
+- Default: `input_nobg.png` (always outputs PNG to preserve transparency)
+- With non-default model: `input_nobg_modelname.png` (e.g., `input_nobg_u2net_human_seg.png`)
+- With alpha matting: `input_nobg_am.png` or `input_nobg_modelname_am.png`
+- With custom alpha matting parameters: `input_nobg_am_f220_b5_e15.png` (where f=foreground threshold, b=background threshold, e=erode size)
+
+### Workflows
+
+Workflows allow you to chain multiple operations together and apply them to an image in a single command. This is useful for repetitive image processing tasks.
+
+```bash
+# Create a workflow that aligns, crops, and resizes an image
+imagewand create-workflow product_photo --add-align --add-autocrop --crop-mode frame --add-resize --resize-width 800
+
+# Create a workflow for product photos with background removal
+imagewand create-workflow product_bg_removal --add-align --add-autocrop --add-resize --resize-width 1200 --add-rmbg --rmbg-model isnet-general-use --rmbg-alpha-matting --rmbg-foreground-threshold 200
+
+# Create a workflow with filters for document scanning
+imagewand create-workflow document_scan --add-align --add-autocrop --add-filter "auto_levels,contrast:factor=1.2,sharpen"
+
+# List all available workflows
+imagewand workflow --list
+
+# Execute a workflow on an image
+imagewand workflow input.jpg --workflow product_photo
+
+# Delete a workflow
+imagewand workflow --delete product_photo
+```
+
+You can include any combination of:
+- Alignment (`--add-align`)
+- Auto-cropping (`--add-autocrop`)
+- Resizing (`--add-resize`)
+- Filters (`--add-filter`)
+- Background removal (`--add-rmbg`)
+
+Each operation supports the same parameters as its corresponding standalone command.
+
+The operations are performed in the order they're defined in the workflow, with each step receiving the output of the previous step.
 
 ### Image Information
 

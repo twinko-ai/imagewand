@@ -17,6 +17,8 @@ dependencies = [
     "click",
     "black>=24.8.0",
     "isort>=5.12.0",
+    "rembg>=2.0.50",
+    "onnxruntime",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -43,6 +45,8 @@ resize-images = "imagewand.resize:resize_image"
 pdf-to-images = "imagewand.pdf2img:pdf_to_images"
 imagewand-merge = "imagewand.scripts.merge_command:merge"
 imagewand-info = "imagewand.imageinfo:print_image_info"
+imagewand-rmbg = "imagewand.rmbg:remove_background_command"
+imagewand-workflow = "imagewand.workflow:workflow_command"
 
 [project.urls]
 Homepage = "https://github.com/twinko-ai/imagewand"
