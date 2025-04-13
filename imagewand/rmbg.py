@@ -1,7 +1,7 @@
 """
 Background removal module for ImageWand using rembg.
 
-This module provides functions to remove backgrounds from images using the 
+This module provides functions to remove backgrounds from images using the
 rembg library, which implements U2Net for salient object detection.
 """
 
@@ -49,24 +49,26 @@ def remove_background(
         base, ext = os.path.splitext(image_path)
         # Build suffix based on parameters
         suffix = "_nobg"
-        
+
         # Add model name if not default
         if model_name != "u2net":
             suffix += f"_{model_name}"
-            
+
         # Add alpha matting info if enabled
         if alpha_matting:
             suffix += "_am"
             # Add non-default alpha matting parameters if used
-            if (alpha_matting_foreground_threshold != 240 or 
-                alpha_matting_background_threshold != 10 or 
-                alpha_matting_erode_size != 10):
+            if (
+                alpha_matting_foreground_threshold != 240
+                or alpha_matting_background_threshold != 10
+                or alpha_matting_erode_size != 10
+            ):
                 suffix += f"_f{alpha_matting_foreground_threshold}"
                 suffix += f"_b{alpha_matting_background_threshold}"
                 suffix += f"_e{alpha_matting_erode_size}"
-                
+
         output_path = f"{base}{suffix}{ext}"
-    
+
     # Ensure output extension supports transparency
     output_format = os.path.splitext(output_path)[1].lower()
     if output_format not in [".png", ".webp"]:
@@ -82,7 +84,7 @@ def remove_background(
     # Apply background removal
     # Create session for better performance with multiple images
     session = rembg.new_session(model_name)
-    
+
     output_img = rembg.remove(
         input_img,
         session=session,
@@ -94,7 +96,7 @@ def remove_background(
 
     # Preserve original image metadata
     metadata = input_img.info
-    
+
     # Save result
     output_img.save(output_path, **metadata)
 
@@ -137,28 +139,28 @@ def batch_remove_background(
     session = rembg.new_session(model_name)
 
     for image_path in tqdm(
-        image_paths, 
-        desc="Removing backgrounds", 
-        disable=not show_progress
+        image_paths, desc="Removing backgrounds", disable=not show_progress
     ):
         # Build suffix based on parameters
         suffix = "_nobg"
-        
+
         # Add model name if not default
         if model_name != "u2net":
             suffix += f"_{model_name}"
-            
+
         # Add alpha matting info if enabled
         if alpha_matting:
             suffix += "_am"
             # Add non-default alpha matting parameters if used
-            if (alpha_matting_foreground_threshold != 240 or 
-                alpha_matting_background_threshold != 10 or 
-                alpha_matting_erode_size != 10):
+            if (
+                alpha_matting_foreground_threshold != 240
+                or alpha_matting_background_threshold != 10
+                or alpha_matting_erode_size != 10
+            ):
                 suffix += f"_f{alpha_matting_foreground_threshold}"
                 suffix += f"_b{alpha_matting_background_threshold}"
                 suffix += f"_e{alpha_matting_erode_size}"
-        
+
         if output_dir:
             filename = os.path.basename(image_path)
             base, ext = os.path.splitext(filename)
@@ -169,7 +171,7 @@ def batch_remove_background(
 
         # Read input image
         input_img = Image.open(image_path)
-        
+
         # Apply background removal
         output_img = rembg.remove(
             input_img,
@@ -182,7 +184,7 @@ def batch_remove_background(
 
         # Preserve original image metadata
         metadata = input_img.info
-        
+
         # Save result
         output_img.save(out_path, **metadata)
         output_paths.append(out_path)
@@ -279,7 +281,7 @@ def remove_background_command(
     INPUT_PATH can be an image file or a directory when used with --batch.
     """
     show_progress = not quiet
-    
+
     # List available presets if requested
     if list_presets:
         presets = list_presets("rmbg_presets")
@@ -290,13 +292,13 @@ def remove_background_command(
             for name, value in presets.items():
                 click.echo(f"  {name}: {value}")
         return
-    
+
     # Load preset if specified
     if preset:
         preset_dict = load_rmbg_preset(preset)
         if not preset_dict:
             raise click.BadParameter(f"Preset '{preset}' not found")
-        
+
         # Update parameters from preset
         model = preset_dict.get("model", model)
         alpha_matting = preset_dict.get("alpha_matting", alpha_matting)
@@ -310,7 +312,7 @@ def remove_background_command(
             alpha_matting_erode_size = preset_dict.get(
                 "erode_size", alpha_matting_erode_size
             )
-    
+
     # Save preset if requested
     if save_preset:
         save_rmbg_preset(
@@ -319,7 +321,7 @@ def remove_background_command(
             alpha_matting,
             alpha_matting_foreground_threshold,
             alpha_matting_background_threshold,
-            alpha_matting_erode_size
+            alpha_matting_erode_size,
         )
         click.echo(f"Preset '{save_preset}' saved successfully")
 
@@ -339,9 +341,7 @@ def remove_background_command(
                 image_paths.append(os.path.join(input_path, file))
 
         if not image_paths:
-            raise click.BadParameter(
-                f"No supported image files found in {input_path}"
-            )
+            raise click.BadParameter(f"No supported image files found in {input_path}")
 
         # If output is specified and is a directory, use it,
         # otherwise create a "nobg" subfolder
@@ -389,4 +389,4 @@ def remove_background_command(
 
 
 if __name__ == "__main__":
-    remove_background_command() 
+    remove_background_command()

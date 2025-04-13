@@ -12,7 +12,7 @@ DEFAULT_CONFIG_PATH = os.path.join(IMAGEWAND_CONFIG_DIR, "presets")
 def load_presets(section="presets"):
     """
     Load presets from config file
-    
+
     Args:
         section: Section name in config file ('presets' for filters,
                 'rmbg_presets' for background removal)
@@ -31,7 +31,7 @@ def load_presets(section="presets"):
 def save_preset(name: str, preset_string: str, section="presets"):
     """
     Save a new preset to config file
-    
+
     Args:
         name: Name of the preset
         preset_string: Preset configuration string
@@ -55,7 +55,7 @@ def save_preset(name: str, preset_string: str, section="presets"):
 def list_presets(section="presets"):
     """
     Return list of available presets
-    
+
     Args:
         section: Section name in config file ('presets' for filters,
                 'rmbg_presets' for background removal)
@@ -64,13 +64,17 @@ def list_presets(section="presets"):
     return {name: value for name, value in presets.items()}
 
 
-def save_rmbg_preset(name: str, model: str, alpha_matting: bool,
-                    foreground_threshold: int = 240, 
-                    background_threshold: int = 10,
-                    erode_size: int = 10):
+def save_rmbg_preset(
+    name: str,
+    model: str,
+    alpha_matting: bool,
+    foreground_threshold: int = 240,
+    background_threshold: int = 10,
+    erode_size: int = 10,
+):
     """
     Save a background removal preset with the given parameters
-    
+
     Args:
         name: Name of the preset
         model: Model name
@@ -80,13 +84,13 @@ def save_rmbg_preset(name: str, model: str, alpha_matting: bool,
         erode_size: Alpha matting erode size
     """
     preset_parts = [f"model={model}"]
-    
+
     if alpha_matting:
         preset_parts.append("alpha_matting=true")
         preset_parts.append(f"foreground_threshold={foreground_threshold}")
         preset_parts.append(f"background_threshold={background_threshold}")
         preset_parts.append(f"erode_size={erode_size}")
-    
+
     preset_string = ",".join(preset_parts)
     save_preset(name, preset_string, "rmbg_presets")
 
@@ -94,28 +98,28 @@ def save_rmbg_preset(name: str, model: str, alpha_matting: bool,
 def load_rmbg_preset(name: str):
     """
     Load a background removal preset
-    
+
     Args:
         name: Name of the preset
-        
+
     Returns:
         Dictionary with preset parameters or None if preset doesn't exist
     """
     presets = load_presets("rmbg_presets")
     if name not in presets:
         return None
-    
+
     preset_string = presets[name]
     preset_dict = {}
-    
+
     for part in preset_string.split(","):
         key, value = part.split("=")
         # Convert to appropriate types
         if key == "alpha_matting":
-            preset_dict[key] = (value.lower() == "true")
+            preset_dict[key] = value.lower() == "true"
         elif key in ["foreground_threshold", "background_threshold", "erode_size"]:
             preset_dict[key] = int(value)
         else:
             preset_dict[key] = value
-    
+
     return preset_dict

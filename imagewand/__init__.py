@@ -16,8 +16,8 @@ from .filters import (
     list_filters,
 )
 from .pdf2img import pdf_to_images
-from .rmbg import remove_background, batch_remove_background
 from .resize import resize_image
+from .rmbg import batch_remove_background, remove_background
 
 __all__ = [
     "resize_image",

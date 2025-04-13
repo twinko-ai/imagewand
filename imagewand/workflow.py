@@ -55,8 +55,12 @@ class Workflow:
             self.steps.pop(index)
         return self
 
-    def execute(self, input_path: str, output_path: Optional[str] = None,
-                show_progress: bool = True) -> str:
+    def execute(
+        self,
+        input_path: str,
+        output_path: Optional[str] = None,
+        show_progress: bool = True,
+    ) -> str:
         """
         Execute the workflow on an image.
 
@@ -80,21 +84,21 @@ class Workflow:
                 for i, step in enumerate(self.steps):
                     operation = step["operation"]
                     params = step["params"]
-                    
+
                     # Set up intermediate output path if needed
-                    is_last_step = (i == total_steps - 1)
+                    is_last_step = i == total_steps - 1
                     step_output = output_path if is_last_step else None
-                    
+
                     # Execute the step
                     if show_progress:
                         pbar.set_description(f"Step {i+1}/{total_steps}: {operation}")
-                    
+
                     if operation == "align":
                         result = align_image(
                             current_path,
                             output_path=step_output,
                             method=params.get("method", "auto"),
-                            angle_threshold=params.get("angle_threshold", 1.0)
+                            angle_threshold=params.get("angle_threshold", 1.0),
                         )
                     elif operation == "autocrop":
                         result = autocrop_func(
@@ -102,7 +106,7 @@ class Workflow:
                             output_path=step_output,
                             mode=params.get("mode", "auto"),
                             border_percent=params.get("border_percent", -1),
-                            margin=params.get("margin", -1)
+                            margin=params.get("margin", -1),
                         )
                     elif operation == "resize":
                         result = resize_image(
@@ -110,17 +114,15 @@ class Workflow:
                             output_path=step_output,
                             width=params.get("width"),
                             height=params.get("height"),
-                            percent=params.get("percent")
+                            percent=params.get("percent"),
                         )
                     elif operation == "filter":
                         filters = params.get("filters", [])
                         if isinstance(filters, str):
                             filters = [f.strip() for f in filters.split(",")]
-                            
+
                         result = apply_filters(
-                            current_path,
-                            filters,
-                            output_path=step_output
+                            current_path, filters, output_path=step_output
                         )
                     elif operation == "rmbg":
                         result = remove_background(
@@ -136,20 +138,20 @@ class Workflow:
                             alpha_matting_erode_size=params.get(
                                 "alpha_matting_erode_size", 10
                             ),
-                            model_name=params.get("model", "u2net")
+                            model_name=params.get("model", "u2net"),
                         )
                     else:
                         # Unknown operation, skip
                         result = current_path
-                    
+
                     # If not the last step, this is a temporary file
                     if not is_last_step and result != current_path:
                         temp_files.append(result)
-                    
+
                     # Update current path for next step
                     current_path = result
                     pbar.update(1)
-        
+
         finally:
             # Clean up temporary files
             if output_path and show_progress:
@@ -160,15 +162,12 @@ class Workflow:
                     except Exception:
                         # Ignore errors during cleanup
                         pass
-        
+
         return current_path
 
     def to_dict(self) -> Dict:
         """Convert workflow to dictionary for serialization."""
-        return {
-            "name": self.name,
-            "steps": self.steps
-        }
+        return {"name": self.name, "steps": self.steps}
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Workflow":
@@ -189,18 +188,18 @@ def load_workflows() -> Dict[str, Workflow]:
     workflows_path = Path(WORKFLOWS_PATH)
     workflows_dir = workflows_path.parent
     workflows_dir.mkdir(exist_ok=True)
-    
+
     if not workflows_path.exists():
         return {}
-    
+
     try:
         with open(WORKFLOWS_PATH, "r") as f:
             data = json.load(f)
-        
+
         workflows = {}
         for name, workflow_data in data.items():
             workflows[name] = Workflow.from_dict(workflow_data)
-        
+
         return workflows
     except Exception as e:
         click.echo(f"Error loading workflows: {e}")
@@ -218,18 +217,18 @@ def save_workflow(workflow: Workflow):
     workflows_path = Path(WORKFLOWS_PATH)
     workflows_dir = workflows_path.parent
     workflows_dir.mkdir(exist_ok=True)
-    
+
     # Load existing workflows
     workflows = load_workflows()
     workflows[workflow.name] = workflow
-    
+
     # Convert to serializable format
     data = {name: wf.to_dict() for name, wf in workflows.items()}
-    
+
     # Save workflows
     with open(WORKFLOWS_PATH, "w") as f:
         json.dump(data, f, indent=2)
-    
+
     # Print debug info about where it was saved
     click.echo(f"Workflow saved to: {WORKFLOWS_PATH}")
 
@@ -247,16 +246,16 @@ def delete_workflow(name: str) -> bool:
     workflows = load_workflows()
     if name in workflows:
         del workflows[name]
-        
+
         # Convert to serializable format
         data = {name: wf.to_dict() for name, wf in workflows.items()}
-        
+
         # Save workflows
         with open(WORKFLOWS_PATH, "w") as f:
             json.dump(data, f, indent=2)
-            
+
         return True
-    
+
     return False
 
 
@@ -264,7 +263,9 @@ def delete_workflow(name: str) -> bool:
 @click.argument("input_path", type=click.Path(exists=True), required=False)
 @click.option("--output", "-o", type=click.Path(), help="Output path")
 @click.option("--workflow", "-w", help="Workflow to use")
-@click.option("--list", "-l", "list_workflows", is_flag=True, help="List available workflows")
+@click.option(
+    "--list", "-l", "list_workflows", is_flag=True, help="List available workflows"
+)
 @click.option("--delete", "-d", help="Delete a workflow")
 def workflow_command(
     input_path: Optional[str] = None,
@@ -275,10 +276,10 @@ def workflow_command(
 ):
     """
     Execute a saved workflow on an image.
-    
+
     A workflow is a sequence of operations (align, autocrop, resize, filter, rmbg)
     that are applied to an image in order.
-    
+
     Examples:
         imagewand workflow input.jpg -w my_workflow
         imagewand workflow --list  # List available workflows
@@ -290,13 +291,13 @@ def workflow_command(
         if not workflows:
             click.echo("No workflows found.")
             return
-        
+
         click.echo("Available workflows:")
         for name, wf in workflows.items():
             steps_str = " → ".join(step["operation"] for step in wf.steps)
             click.echo(f"  {name}: {steps_str}")
         return
-    
+
     # Handle deleting workflow without requiring input path
     if delete:
         if delete_workflow(delete):
@@ -304,24 +305,26 @@ def workflow_command(
         else:
             click.echo(f"Workflow '{delete}' not found.")
         return
-    
+
     # For executing a workflow, we need input path and workflow name
     if not input_path:
         click.echo("Input path is required when executing a workflow.")
         return
-    
+
     if not workflow:
-        click.echo("No workflow specified. Use --workflow to specify a workflow or --list to see available workflows.")
+        click.echo(
+            "No workflow specified. Use --workflow to specify a workflow or --list to see available workflows."
+        )
         return
-    
+
     workflows = load_workflows()
     if workflow not in workflows:
         click.echo(f"Workflow '{workflow}' not found.")
         return
-    
+
     result = workflows[workflow].execute(input_path, output)
     click.echo(f"Workflow completed. Output saved to: {result}")
 
 
 if __name__ == "__main__":
-    workflow_command() 
+    workflow_command()
