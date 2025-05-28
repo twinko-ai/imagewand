@@ -115,6 +115,7 @@ class Workflow:
                             width=params.get("width"),
                             height=params.get("height"),
                             percent=params.get("percent"),
+                            target_size=params.get("target_size"),
                         )
                     elif operation == "filter":
                         filters = params.get("filters", [])

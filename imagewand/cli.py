@@ -361,6 +361,7 @@ def workflow(
 @click.option("--resize-width", type=int, help="Resize width")
 @click.option("--resize-height", type=int, help="Resize height")
 @click.option("--resize-percent", type=float, help="Resize percentage")
+@click.option("--resize-target-size", help="Resize to target file size (e.g., '5MB', '500KB')")
 @click.option("--add-filter", "-f", help="Add filter step (comma-separated filters)")
 @click.option("--add-rmbg", "-b", is_flag=True, help="Add background removal step")
 @click.option(
@@ -400,6 +401,7 @@ def create_workflow(
     resize_width,
     resize_height,
     resize_percent,
+    resize_target_size,
     add_filter,
     add_rmbg,
     rmbg_model,
@@ -452,6 +454,7 @@ def create_workflow(
                     "width": resize_width,
                     "height": resize_height,
                     "percent": resize_percent,
+                    "target_size": resize_target_size,
                 },
             )
             size_info = []
@@ -461,6 +464,8 @@ def create_workflow(
                 size_info.append(f"height={resize_height}")
             if resize_percent:
                 size_info.append(f"percent={resize_percent}")
+            if resize_target_size:
+                size_info.append(f"target_size={resize_target_size}")
             click.echo(f"Added resize step ({', '.join(size_info)})")
 
         if add_filter:
@@ -494,6 +499,49 @@ def create_workflow(
         return 1
 
 
+@cli.command()
+@click.argument("input_path")
+@click.option("-o", "--output", help="Output path")
+@click.option("--width", "-w", type=int, help="Target width in pixels")
+@click.option("--height", type=int, help="Target height in pixels")
+@click.option("--percent", "-p", type=float, help="Resize percentage (e.g., 50.0 for 50%)")
+@click.option("--target-size", "-s", help="Target file size (e.g., '5MB', '500KB')")
+def resize(input_path, output, width, height, percent, target_size):
+    """Resize an image by dimensions, percentage, or target file size"""
+    try:
+        from .resize import resize_image
+
+        # Validate inputs
+        if not any([width, height, percent, target_size]):
+            click.echo("Error: Must specify either --width, --height, --percent, or --target-size")
+            return 1
+
+        # Check for conflicting options
+        resize_options = [width, height, percent, target_size]
+        specified_options = [opt for opt in resize_options if opt is not None]
+        
+        if target_size and any([width, height, percent]):
+            click.echo("Error: Cannot use --target-size with other resize options")
+            return 1
+        
+        if percent and any([width, height]):
+            click.echo("Error: Cannot use --percent with --width or --height")
+            return 1
+
+        result = resize_image(
+            input_path,
+            output_path=output,
+            width=width,
+            height=height,
+            percent=percent,
+            target_size=target_size,
+        )
+        click.echo(f"Resized image saved to: {result}")
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        return 1
+
+
 def main():
     start_time = time.time()
     parser = argparse.ArgumentParser(description="ImageWand - Image manipulation tools")
@@ -516,6 +564,10 @@ def main():
     resize_parser.add_argument("-o", "--output", help="Output path", default=None)
     resize_parser.add_argument("-w", "--width", help="New width", type=int)
     resize_parser.add_argument("--height", help="New height", type=int)
+    resize_parser.add_argument("-p", "--percent", help="Resize percentage", type=float)
+    resize_parser.add_argument(
+        "-s", "--target-size", help="Target file size (e.g., '5MB', '500KB')"
+    )
 
     # Autocrop command
     autocrop_parser = subparsers.add_parser("autocrop", help="Auto-crop scanned images")
@@ -684,6 +736,9 @@ def main():
         "--resize-percent", type=float, help="Resize percentage"
     )
     create_workflow_parser.add_argument(
+        "--resize-target-size", help="Resize to target file size (e.g., '5MB', '500KB')"
+    )
+    create_workflow_parser.add_argument(
         "-f", "--add-filter", help="Add filter step (comma-separated filters)"
     )
     create_workflow_parser.add_argument(
@@ -757,6 +812,20 @@ def main():
             print_execution_time(start_time)
 
         elif args.command == "resize":
+            # Validate inputs
+            if not any([args.width, args.height, args.percent, args.target_size]):
+                print("Error: Must specify either --width, --height, --percent, or --target-size")
+                return 1
+
+            # Check for conflicting options
+            if args.target_size and any([args.width, args.height, args.percent]):
+                print("Error: Cannot use --target-size with other resize options")
+                return 1
+            
+            if args.percent and any([args.width, args.height]):
+                print("Error: Cannot use --percent with --width or --height")
+                return 1
+
             # Let the resize_image function handle the default output path
             if args.output is None:
                 output_path = None
@@ -784,6 +853,8 @@ def main():
                     output_path,
                     width=args.width,
                     height=args.height,
+                    percent=args.percent,
+                    target_size=args.target_size,
                     progress_callback=progress_callback,
                 )
 
@@ -1109,6 +1180,7 @@ def main():
                             "width": args.resize_width,
                             "height": args.resize_height,
                             "percent": args.resize_percent,
+                            "target_size": args.resize_target_size,
                         },
                     )
                     size_info = []
@@ -1118,6 +1190,8 @@ def main():
                         size_info.append(f"height={args.resize_height}")
                     if args.resize_percent:
                         size_info.append(f"percent={args.resize_percent}")
+                    if args.resize_target_size:
+                        size_info.append(f"target_size={args.resize_target_size}")
                     print(f"Added resize step ({', '.join(size_info)})")
 
                 if args.add_filter:
