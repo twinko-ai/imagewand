@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import pytest
 
-from imagewand.resize import resize_image, parse_file_size, resize_to_target_size
+from imagewand.resize import parse_file_size, resize_image, resize_to_target_size
 
 
 @pytest.fixture
