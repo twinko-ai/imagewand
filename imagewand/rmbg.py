@@ -13,11 +13,7 @@ import rembg
 from PIL import Image
 from tqdm import tqdm
 
-from imagewand.config import (
-    list_presets,
-    load_rmbg_preset,
-    save_rmbg_preset,
-)
+from imagewand.config import list_presets, load_rmbg_preset, save_rmbg_preset
 
 
 def remove_background(
