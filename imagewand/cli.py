@@ -361,7 +361,9 @@ def workflow(
 @click.option("--resize-width", type=int, help="Resize width")
 @click.option("--resize-height", type=int, help="Resize height")
 @click.option("--resize-percent", type=float, help="Resize percentage")
-@click.option("--resize-target-size", help="Resize to target file size (e.g., '5MB', '500KB')")
+@click.option(
+    "--resize-target-size", help="Resize to target file size (e.g., '5MB', '500KB')"
+)
 @click.option("--add-filter", "-f", help="Add filter step (comma-separated filters)")
 @click.option("--add-rmbg", "-b", is_flag=True, help="Add background removal step")
 @click.option(
@@ -504,7 +506,9 @@ def create_workflow(
 @click.option("-o", "--output", help="Output path")
 @click.option("--width", "-w", type=int, help="Target width in pixels")
 @click.option("--height", type=int, help="Target height in pixels")
-@click.option("--percent", "-p", type=float, help="Resize percentage (e.g., 50.0 for 50%)")
+@click.option(
+    "--percent", "-p", type=float, help="Resize percentage (e.g., 50.0 for 50%)"
+)
 @click.option("--target-size", "-s", help="Target file size (e.g., '5MB', '500KB')")
 def resize(input_path, output, width, height, percent, target_size):
     """Resize an image by dimensions, percentage, or target file size"""
@@ -513,17 +517,19 @@ def resize(input_path, output, width, height, percent, target_size):
 
         # Validate inputs
         if not any([width, height, percent, target_size]):
-            click.echo("Error: Must specify either --width, --height, --percent, or --target-size")
+            click.echo(
+                "Error: Must specify either --width, --height, --percent, or --target-size"
+            )
             return 1
 
         # Check for conflicting options
         resize_options = [width, height, percent, target_size]
         specified_options = [opt for opt in resize_options if opt is not None]
-        
+
         if target_size and any([width, height, percent]):
             click.echo("Error: Cannot use --target-size with other resize options")
             return 1
-        
+
         if percent and any([width, height]):
             click.echo("Error: Cannot use --percent with --width or --height")
             return 1
@@ -814,14 +820,16 @@ def main():
         elif args.command == "resize":
             # Validate inputs
             if not any([args.width, args.height, args.percent, args.target_size]):
-                print("Error: Must specify either --width, --height, --percent, or --target-size")
+                print(
+                    "Error: Must specify either --width, --height, --percent, or --target-size"
+                )
                 return 1
 
             # Check for conflicting options
             if args.target_size and any([args.width, args.height, args.percent]):
                 print("Error: Cannot use --target-size with other resize options")
                 return 1
-            
+
             if args.percent and any([args.width, args.height]):
                 print("Error: Cannot use --percent with --width or --height")
                 return 1

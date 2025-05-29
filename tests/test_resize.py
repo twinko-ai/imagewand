@@ -25,10 +25,10 @@ def test_parse_file_size():
     assert parse_file_size("1024") == 1024
     assert parse_file_size("5M") == 5 * 1024 * 1024
     assert parse_file_size("500K") == 500 * 1024
-    
+
     with pytest.raises(ValueError):
         parse_file_size("invalid")
-    
+
     with pytest.raises(ValueError):
         parse_file_size("5XB")
 
@@ -73,7 +73,7 @@ def test_resize_to_target_size(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
     result = resize_to_target_size(sample_image, "50KB", output)
     assert os.path.exists(result)
-    
+
     # Check that file size is reasonably close to target
     file_size = os.path.getsize(result)
     target_size = 50 * 1024
@@ -85,7 +85,7 @@ def test_resize_target_size_via_main_function(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
     result = resize_image(sample_image, output, target_size="30KB")
     assert os.path.exists(result)
-    
+
     # Check that file size is reasonably close to target
     file_size = os.path.getsize(result)
     target_size = 30 * 1024
@@ -100,5 +100,8 @@ def test_resize_invalid_input():
 
 def test_resize_no_dimensions(sample_image, tmp_path):
     output = str(tmp_path / "output.jpg")
-    with pytest.raises(ValueError, match="Either width, height, percent, or target_size must be specified"):
+    with pytest.raises(
+        ValueError,
+        match="Either width, height, percent, or target_size must be specified",
+    ):
         resize_image(sample_image, output)
