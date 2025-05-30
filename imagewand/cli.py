@@ -107,13 +107,12 @@ def filter(
 ):
     """Apply filters to images."""
     try:
-        from .config import list_presets as get_presets
-        from .config import save_preset as save_preset_func
+        from .config import list_presets, save_preset, load_presets
         from .filters import apply_filters, list_filters
 
         # If --list-presets is specified, just list presets and return
         if list_presets:
-            presets = get_presets()
+            presets = list_presets()
             if not presets:
                 click.echo("No presets found.")
                 return
@@ -131,7 +130,7 @@ def filter(
 
         # Load filters from preset if specified
         if preset:
-            presets = get_presets()
+            presets = load_presets()
             if preset not in presets:
                 click.echo(f"Preset '{preset}' not found.")
                 return 1
@@ -192,7 +191,7 @@ def filter(
 
         # Save preset if requested
         if save_preset:
-            save_preset_func(save_preset, filters)
+            save_preset(save_preset, filters)
             click.echo(f"Saved preset '{save_preset}': {filters}")
 
     except Exception as e:
@@ -902,7 +901,7 @@ def main():
 
         elif args.command == "filter":
             try:
-                from .config import list_presets, save_preset
+                from .config import list_presets, save_preset, load_presets
                 from .filters import apply_filters, list_filters
 
                 # If --list-presets is specified, just list presets and return
@@ -955,7 +954,57 @@ def main():
                     save_preset(args.save_preset, filters)
                     print(f"Saved filter preset '{args.save_preset}': {filters}")
 
-                # Rest of your original filter command logic...
+                # Check if input is a directory
+                if os.path.isdir(args.image_path):
+                    if not args.recursive:
+                        print(
+                            "Error: input path is a directory. Use --recursive to process all images."
+                        )
+                        return 1
+
+                    # Process all images in directory
+                    image_types = ["*.jpg", "*.jpeg", "*.png", "*.JPG", "*.JPEG", "*.PNG"]
+                    if not args.output:
+                        output = os.path.join(args.image_path, "filtered")
+                    else:
+                        output = args.output
+                    os.makedirs(output, exist_ok=True)
+
+                    files = []
+                    for pattern in image_types:
+                        files.extend(glob.glob(os.path.join(args.image_path, pattern)))
+
+                    if not files:
+                        print("No image files found in directory.")
+                        return 1
+
+                    with tqdm(total=len(files), desc="Applying filters") as pbar:
+                        for file in files:
+                            out_file = os.path.join(output, os.path.basename(file))
+                            try:
+                                apply_filters(file, filters.split(","), out_file)
+                            except Exception as e:
+                                print(f"Error processing {file}: {str(e)}")
+                            pbar.update(1)
+
+                    print(f"Filtered images saved to: {output}")
+                else:
+                    # Process single image
+                    if not args.output:
+                        output = args.image_path
+                        if "." in os.path.basename(output):
+                            name, ext = os.path.splitext(output)
+                            output = f"{name}_filtered{ext}"
+                        else:
+                            output = f"{output}_filtered"
+                    else:
+                        output = args.output
+
+                    apply_filters(args.image_path, filters.split(","), output)
+                    print(f"Filtered image saved to: {output}")
+
+                print_execution_time(start_time)
+
             except Exception as e:
                 print(f"Error: {str(e)}")
                 return 1

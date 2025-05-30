@@ -10,7 +10,14 @@ from imagewand.resize import parse_file_size, resize_image, resize_to_target_siz
 @pytest.fixture
 def sample_image(tmp_path):
     """Create a sample image for testing"""
-    img = np.ones((300, 400, 3), dtype=np.uint8) * 128
+    # Create a more realistic image with some variation
+    # that won't compress to almost nothing
+    img = np.random.randint(100, 200, (300, 400, 3), dtype=np.uint8)
+    # Add some structure to make it more realistic
+    cv2.rectangle(img, (50, 50), (350, 250), (255, 0, 0), -1)
+    cv2.circle(img, (200, 150), 50, (0, 255, 0), -1)
+    cv2.line(img, (0, 0), (400, 300), (0, 0, 255), 5)
+    
     path = tmp_path / "test.jpg"
     cv2.imwrite(str(path), img)
     return str(path)
