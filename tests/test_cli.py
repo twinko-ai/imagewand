@@ -73,20 +73,26 @@ def test_cli_filter_command():
     """Test the filter command with a mock image."""
     runner = CliRunner()
 
-    # Create a more comprehensive mock to avoid file access issues
-    with patch(
-        "imagewand.cli.apply_filters", return_value="test_filtered.jpg"
-    ) as mock_apply:
-        result = runner.invoke(cli, ["filter", "test.jpg", "-f", "grayscale"])
-        print(f"Result output: {result.output}")
-        print(f"Result exit code: {result.exit_code}")
+    # Use isolated filesystem and create a dummy file
+    with runner.isolated_filesystem():
+        # Create a dummy test file
+        with open("test.jpg", "w") as f:
+            f.write("dummy image")
 
-        # Check that the function was called with the right arguments
-        mock_apply.assert_called_once()
+        # Create a more comprehensive mock to avoid file access issues
+        with patch(
+            "imagewand.filters.apply_filters", return_value="test_filtered.jpg"
+        ) as mock_apply:
+            result = runner.invoke(cli, ["filter", "test.jpg", "-f", "grayscale"])
+            print(f"Result output: {result.output}")
+            print(f"Result exit code: {result.exit_code}")
 
-        # Check the result
-        assert result.exit_code == 0, f"Command failed with output: {result.output}"
-        assert "Filtered image saved to" in result.output
+            # Check that the function was called with the right arguments
+            mock_apply.assert_called_once()
+
+            # Check the result
+            assert result.exit_code == 0, f"Command failed with output: {result.output}"
+            assert "Filtered image saved to" in result.output
 
 
 def test_cli_align_command(sample_image):
@@ -254,11 +260,23 @@ def test_main_list_filters():
     with patch("sys.argv", ["imagewand", "list-filters"]), patch(
         "imagewand.filters.list_filters", return_value=["grayscale", "blur"]
     ), patch("time.time", return_value=0), patch("builtins.print") as mock_print:
-        main()
-        # Check that the filters were printed
-        assert any(
-            "Available filters" in str(call) for call in mock_print.call_args_list
-        )
+        try:
+            main()
+            # Debug: print all the calls to see what's happening
+            print(f"All print calls: {mock_print.call_args_list}")
+            # Check that the filters were printed (note the colon in "Available filters:")
+            found_filters = any(
+                "Available filters:" in str(call) for call in mock_print.call_args_list
+            )
+            if not found_filters:
+                # Print individual calls for debugging
+                for i, call in enumerate(mock_print.call_args_list):
+                    print(f"Call {i}: {call}")
+            assert found_filters
+        except Exception as e:
+            print(f"Exception during main(): {e}")
+            print(f"Print calls before exception: {mock_print.call_args_list}")
+            raise
 
 
 def test_main_error_handling():

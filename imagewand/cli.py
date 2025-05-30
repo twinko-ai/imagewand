@@ -12,7 +12,9 @@ from tqdm import tqdm
 
 from .align import align_image
 from .autocrop import autocrop
-from .config import list_presets, load_presets, save_preset
+from .config import list_presets as list_presets_func
+from .config import load_presets
+from .config import save_preset as save_preset_func
 from .filters import apply_filters, batch_apply_filters, list_filters
 from .imageinfo import print_image_info
 from .pdf2img import pdf_to_images
@@ -107,12 +109,14 @@ def filter(
 ):
     """Apply filters to images."""
     try:
-        from .config import list_presets, load_presets, save_preset
+        from .config import list_presets as list_presets_func
+        from .config import load_presets
+        from .config import save_preset as save_preset_func
         from .filters import apply_filters, list_filters
 
         # If --list-presets is specified, just list presets and return
         if list_presets:
-            presets = list_presets()
+            presets = list_presets_func()
             if not presets:
                 click.echo("No presets found.")
                 return
@@ -191,7 +195,7 @@ def filter(
 
         # Save preset if requested
         if save_preset:
-            save_preset(save_preset, filters)
+            save_preset_func(save_preset, filters)
             click.echo(f"Saved preset '{save_preset}': {filters}")
 
     except Exception as e:
@@ -901,12 +905,14 @@ def main():
 
         elif args.command == "filter":
             try:
-                from .config import list_presets, load_presets, save_preset
+                from .config import list_presets as list_presets_func
+                from .config import load_presets
+                from .config import save_preset as save_preset_func
                 from .filters import apply_filters, list_filters
 
                 # If --list-presets is specified, just list presets and return
                 if args.list_presets:
-                    presets = list_presets()
+                    presets = list_presets_func()
                     if not presets:
                         print("No presets found.")
                     else:
@@ -951,7 +957,7 @@ def main():
 
                 # Save preset if requested
                 if args.save_preset and filters:
-                    save_preset(args.save_preset, filters)
+                    save_preset_func(args.save_preset, filters)
                     print(f"Saved filter preset '{args.save_preset}': {filters}")
 
                 # Check if input is a directory

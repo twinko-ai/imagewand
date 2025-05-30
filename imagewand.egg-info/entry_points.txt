@@ -3,5 +3,6 @@ imagewand = imagewand.cli:main
 imagewand-info = imagewand.imageinfo:print_image_info
 imagewand-merge = imagewand.scripts.merge_command:merge
 imagewand-rmbg = imagewand.rmbg:remove_background_command
+imagewand-workflow = imagewand.workflow:workflow_command
 pdf-to-images = imagewand.pdf2img:pdf_to_images
 resize-images = imagewand.resize:resize_image

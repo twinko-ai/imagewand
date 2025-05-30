@@ -12,6 +12,7 @@ imagewand/imageinfo.py
 imagewand/pdf2img.py
 imagewand/resize.py
 imagewand/rmbg.py
+imagewand/workflow.py
 imagewand.egg-info/PKG-INFO
 imagewand.egg-info/SOURCES.txt
 imagewand.egg-info/dependency_links.txt
