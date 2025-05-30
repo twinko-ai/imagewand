@@ -39,7 +39,6 @@ def test_load_presets_with_file(mock_config_file):
     with patch("os.path.exists", return_value=True), patch(
         "configparser.ConfigParser", return_value=config
     ):
-
         presets = load_presets()
 
         assert isinstance(presets, configparser.SectionProxy)
@@ -55,7 +54,6 @@ def test_save_preset_new_file():
     with patch("os.path.exists", return_value=False), patch(
         "builtins.open", mock_open()
     ) as mock_file:
-
         save_preset("test_preset", "grayscale,sharpen")
 
         mock_file.assert_called_with(DEFAULT_CONFIG_PATH, "w")
@@ -72,7 +70,6 @@ def test_save_preset_existing_file(mock_config_file):
     with patch("os.path.exists", return_value=True), patch(
         "configparser.ConfigParser", return_value=config
     ), patch("builtins.open", mock_file):
-
         save_preset("new_preset", "blur,contrast")
 
         mock_file.assert_called_with(DEFAULT_CONFIG_PATH, "w")

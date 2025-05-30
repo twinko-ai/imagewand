@@ -212,7 +212,7 @@ Cropping modes explained:
 - `frame`: Best for photos on contrasting backgrounds (e.g., artwork on black paper)
   - Use `--margin` to adjust cropping (negative for tighter crop, positive for more margin)
   - Default margin is -5 for slightly aggressive crop
-  
+
 - `border`: Best for documents with white margins
   - Use `-b` to adjust border percentage (negative for tighter crop, positive to keep more border)
   - Default border is 0 for exact content boundaries

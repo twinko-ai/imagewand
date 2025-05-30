@@ -64,11 +64,11 @@ def resize_to_target_size(
     output_path: str = None,
     quality_range: tuple = (30, 95),
     max_iterations: int = 15,
-    progress_callback=None
+    progress_callback=None,
 ) -> str:
     """
     Resize an image to achieve a target file size.
-    
+
     Args:
         input_path: Path to input image
         target_size: Target file size (e.g., "5MB", "500KB")
@@ -76,90 +76,94 @@ def resize_to_target_size(
         quality_range: Min and max quality for JPEG compression (30-95)
         max_iterations: Maximum iterations to find target size
         progress_callback: Function to call with progress updates
-        
+
     Returns:
         Path to resized image
     """
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"Input file not found: {input_path}")
-    
+
     target_bytes = parse_file_size(target_size)
-    
+
     # Create output path if not specified
     if output_path is None:
         base, ext = os.path.splitext(input_path)
         output_path = f"{base}_resized_{target_size.lower().replace('.', 'p')}{ext}"
-    
+
     # Create output directory if it doesn't exist
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
-    
+
     # Get original image info
     with Image.open(input_path) as img:
         original_width, original_height = img.size
         original_format = img.format
         dpi = img.info.get("dpi")
-    
+
     # Determine output format
     output_ext = os.path.splitext(output_path)[1].lower()
-    if output_ext in ['.jpg', '.jpeg']:
+    if output_ext in [".jpg", ".jpeg"]:
         use_jpeg = True
-    elif output_ext in ['.png']:
+    elif output_ext in [".png"]:
         use_jpeg = False
     else:
         # Default to JPEG for size optimization
         use_jpeg = True
         base = os.path.splitext(output_path)[0]
         output_path = f"{base}.jpg"
-    
+
     min_quality, max_quality = quality_range
     best_path = None
-    best_size_diff = float('inf')
-    
+    best_size_diff = float("inf")
+
     # More conservative scale range - start closer to original size
     scale_min, scale_max = 0.3, 1.0  # Start with larger minimum scale
     current_scale = 0.8  # Start with 80% of original size
-    
+
     for iteration in range(max_iterations):
         if progress_callback:
             progress_callback(int((iteration / max_iterations) * 90))
-        
+
         # Calculate dimensions for current scale
         new_width = max(10, int(original_width * current_scale))
         new_height = max(10, int(original_height * current_scale))
-        
+
         # Create temporary file for testing
         temp_path = output_path + f".temp_{iteration}.jpg"
-        
+
         try:
             # Resize image
             img = cv2.imread(input_path)
-            resized = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
-            
+            resized = cv2.resize(
+                img, (new_width, new_height), interpolation=cv2.INTER_AREA
+            )
+
             if use_jpeg:
                 # Binary search for quality
                 quality_low, quality_high = min_quality, max_quality
                 best_quality = max_quality
                 best_iteration_path = None
-                best_iteration_diff = float('inf')
-                
+                best_iteration_diff = float("inf")
+
                 # Try different quality levels for this scale
                 for quality_iter in range(5):  # More quality iterations
                     quality = int((quality_low + quality_high) / 2)
-                    
+
                     # Save with specific quality
                     cv2.imwrite(temp_path, resized, [cv2.IMWRITE_JPEG_QUALITY, quality])
-                    
+
                     # Add DPI back if available
                     if dpi:
                         try:
                             with Image.open(temp_path) as pil_img:
-                                pil_img.save(temp_path, dpi=dpi, quality=quality, optimize=True)
+                                pil_img.save(
+                                    temp_path, dpi=dpi, quality=quality, optimize=True
+                                )
                         except Exception:
                             pass
-                    
+
                     current_size = get_file_size(temp_path)
                     size_diff = abs(current_size - target_bytes)
-                    
+
                     # Track best quality for this scale
                     if size_diff < best_iteration_diff:
                         best_iteration_diff = size_diff
@@ -176,7 +180,7 @@ def resize_to_target_size(
                             os.remove(temp_path)
                         except:
                             pass
-                    
+
                     # Adjust quality for next iteration
                     if current_size > target_bytes:
                         quality_high = quality - 1
@@ -184,10 +188,10 @@ def resize_to_target_size(
                         quality_low = quality + 1
                     else:
                         break  # Perfect match
-                    
+
                     if quality_low >= quality_high:
                         break
-                
+
                 # Check if this scale+quality combo is best overall
                 if best_iteration_path and best_iteration_diff < best_size_diff:
                     best_size_diff = best_iteration_diff
@@ -202,22 +206,24 @@ def resize_to_target_size(
                         os.remove(best_iteration_path)
                     except:
                         pass
-                
+
             else:
                 # PNG - only scale, no quality adjustment
                 cv2.imwrite(temp_path, resized, [cv2.IMWRITE_PNG_COMPRESSION, 6])
-                
+
                 # Add DPI back if available
                 if dpi:
                     try:
                         with Image.open(temp_path) as pil_img:
-                            pil_img.save(temp_path, dpi=dpi, compress_level=6, optimize=True)
+                            pil_img.save(
+                                temp_path, dpi=dpi, compress_level=6, optimize=True
+                            )
                     except Exception:
                         pass
-                
+
                 current_size = get_file_size(temp_path)
                 size_diff = abs(current_size - target_bytes)
-                
+
                 if size_diff < best_size_diff:
                     best_size_diff = size_diff
                     if best_path and best_path != temp_path:
@@ -232,13 +238,13 @@ def resize_to_target_size(
                         os.remove(temp_path)
                     except:
                         pass
-            
+
             # Check if we're close enough (within 10% of target)
             if best_path and os.path.exists(best_path):
                 current_best_size = get_file_size(best_path)
                 if abs(current_best_size - target_bytes) / target_bytes < 0.1:
                     break  # Close enough
-                
+
                 # Adjust scale for next iteration based on current best result
                 if current_best_size > target_bytes:
                     # File too big, reduce scale
@@ -251,11 +257,11 @@ def resize_to_target_size(
             else:
                 # No best result yet, try smaller scale
                 current_scale *= 0.8
-            
+
             # Prevent scale from getting too small
             if current_scale < 0.1:
                 current_scale = 0.1
-                
+
         except Exception as e:
             # Clean up temp file on error
             try:
@@ -263,11 +269,11 @@ def resize_to_target_size(
                     os.remove(temp_path)
             except:
                 pass
-            
+
             # If this is the last iteration, raise the error
             if iteration == max_iterations - 1:
                 raise RuntimeError(f"Failed to resize to target size: {str(e)}")
-    
+
     # Move best result to final output path
     if best_path and os.path.exists(best_path):
         try:
@@ -278,15 +284,17 @@ def resize_to_target_size(
             raise RuntimeError(f"Failed to save final result: {str(e)}")
     else:
         raise RuntimeError("Failed to create resized image within target size")
-    
+
     if progress_callback:
         progress_callback(100)
-    
+
     final_size = get_file_size(output_path)
     print(f"Target: {target_size} ({target_bytes:,} bytes)")
     print(f"Achieved: {final_size:,} bytes ({final_size/1024/1024:.2f} MB)")
-    print(f"Difference: {abs(final_size - target_bytes):,} bytes ({abs(final_size - target_bytes)/target_bytes*100:.1f}%)")
-    
+    print(
+        f"Difference: {abs(final_size - target_bytes):,} bytes ({abs(final_size - target_bytes)/target_bytes*100:.1f}%)"
+    )
+
     return output_path
 
 

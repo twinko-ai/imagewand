@@ -107,7 +107,7 @@ def filter(
 ):
     """Apply filters to images."""
     try:
-        from .config import list_presets, save_preset, load_presets
+        from .config import list_presets, load_presets, save_preset
         from .filters import apply_filters, list_filters
 
         # If --list-presets is specified, just list presets and return
@@ -901,7 +901,7 @@ def main():
 
         elif args.command == "filter":
             try:
-                from .config import list_presets, save_preset, load_presets
+                from .config import list_presets, load_presets, save_preset
                 from .filters import apply_filters, list_filters
 
                 # If --list-presets is specified, just list presets and return
@@ -963,7 +963,14 @@ def main():
                         return 1
 
                     # Process all images in directory
-                    image_types = ["*.jpg", "*.jpeg", "*.png", "*.JPG", "*.JPEG", "*.PNG"]
+                    image_types = [
+                        "*.jpg",
+                        "*.jpeg",
+                        "*.png",
+                        "*.JPG",
+                        "*.JPEG",
+                        "*.PNG",
+                    ]
                     if not args.output:
                         output = os.path.join(args.image_path, "filtered")
                     else:

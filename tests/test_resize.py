@@ -17,7 +17,7 @@ def sample_image(tmp_path):
     cv2.rectangle(img, (50, 50), (350, 250), (255, 0, 0), -1)
     cv2.circle(img, (200, 150), 50, (0, 255, 0), -1)
     cv2.line(img, (0, 0), (400, 300), (0, 0, 255), 5)
-    
+
     path = tmp_path / "test.jpg"
     cv2.imwrite(str(path), img)
     return str(path)

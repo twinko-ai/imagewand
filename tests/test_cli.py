@@ -166,7 +166,6 @@ def test_main_pdf2img(sample_pdf):
     ), patch(
         "builtins.print"
     ) as mock_print:
-
         # Mock the print function to capture all calls
         calls = []
 
@@ -274,7 +273,6 @@ def test_main_error_handling():
     ), patch(
         "builtins.print"
     ) as mock_print:
-
         # Just call main and check for error message
         main()
 
